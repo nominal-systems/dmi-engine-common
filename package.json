@@ -1,6 +1,6 @@
 {
   "name": "@line-studio/dmi-engine-common",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Common, reusable stuff for DMI Engine and Integration Modules",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -8,11 +8,11 @@
     "lib/**/*"
   ],
   "scripts": {
-    "preversion" : "npm run lint",
-    "prepublishOnly" : "npm run lint",
+    "preversion": "npm run lint",
+    "prepublishOnly": "npm run lint",
     "prepare": "npm run build",
     "version": "git add -A src",
-    "postversion" : "git push --follow-tags",
+    "postversion": "git push --follow-tags",
     "build": "tsc",
     "lint": "eslint \"src/**/*.ts\" --fix"
   },
