@@ -1,0 +1,31 @@
+{
+  "name": "dmi-engine-common",
+  "version": "0.0.1",
+  "description": "Common, reusable stuff for DMI Engine and Integration Modules",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Miguel Araujo",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^15.6.1",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-standard-with-typescript": "^20.0.0",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "@nestjs/microservices": "^7.6.17",
+    "class-validator": "^0.13.1"
+  }
+}
