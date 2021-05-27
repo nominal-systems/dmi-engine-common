@@ -19,4 +19,4 @@ export type Nullable<T> = { [P in keyof T]: T[P] | null }
 export type NullableOptional<T> = PickRequired<T> & Nullable<PickOptional<T>>
 
 export type NonNullableOptional<T> = PickRequired<T> &
-  NonNullable<PickOptional<T>>
+NonNullable<PickOptional<T>>
