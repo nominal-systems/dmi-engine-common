@@ -3,7 +3,7 @@ import { ApiEvent } from '../events/api-event'
 import { NewIntegrationPayload } from './payloads'
 import {
   Breed,
-  Gender,
+  Sex,
   IMetadata,
   IPayload,
   Order,
@@ -23,7 +23,7 @@ export enum Provider {
 export enum Resource {
   Orders = 'orders',
   Breeds = 'breeds',
-  Genders = 'genders',
+  Sexes = 'sexes',
   Services = 'services',
   Species = 'species',
   Integration = 'integration'
@@ -56,7 +56,7 @@ export interface ProviderIntegration {
   cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>
   cancelOrderTest: (msg: ApiEvent, context?: MqttContext) => Promise<void>
   getServices: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Service> | Service[]>
-  getGenders: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Gender> | Gender[]>
+  getSexes: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Sex> | Sex[]>
   getSpecies: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Species> | Species[]>
   getBreeds: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Breed> | Breed[]>
   fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any

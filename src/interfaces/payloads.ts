@@ -28,7 +28,7 @@ export interface Patient {
   lastName: string
   firstName?: string
   species: string
-  gender: string
+  sex: string
   birthdate: string
   breed: string
   weight: number

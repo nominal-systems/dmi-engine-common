@@ -32,7 +32,7 @@ export interface Species {
   name: string
 }
 
-export interface Gender {
+export interface Sex {
   id: string
   name: string
 }
@@ -114,7 +114,7 @@ export interface ProviderService<T extends IMetadata> {
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
   cancelOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
   getServices: (payload: NullPayloadPayload, metadata: T) => Promise<Service[]>
-  getGenders: (payload: NullPayloadPayload, metadata: T) => Promise<Gender[]>
+  getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<Sex[]>
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<Species[]>
   getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<Breed[]>
 }
