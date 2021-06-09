@@ -1,5 +1,5 @@
 {
-  "name": "@line-studio/dmi-engine-common",
+  "name": "@nominal-systems/dmi-engine-common",
   "version": "0.0.8",
   "description": "Common, reusable stuff for DMI Engine and Integration Modules",
   "main": "lib/index.js",
