@@ -32,6 +32,7 @@ export enum Resource {
 export enum Operation {
   Get = 'get',
   Create = 'create',
+  Remove = 'remove',
   Cancel = 'cancel',
   TestsCancel = 'tests.cancel',
   Results = 'results',
@@ -55,10 +56,22 @@ export interface ProviderIntegration {
   getOrderResult: (msg: ApiEvent, context?: MqttContext) => Promise<Result>
   cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>
   cancelOrderTest: (msg: ApiEvent, context?: MqttContext) => Promise<void>
-  getServices: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Service> | Service[]>
-  getSexes: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Sex> | Sex[]>
-  getSpecies: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Species> | Species[]>
-  getBreeds: (msg: ApiEvent, context?: MqttContext) => Promise<ReferenceDataResponse<Breed> | Breed[]>
+  getServices: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<ReferenceDataResponse<Service> | Service[]>
+  getSexes: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<ReferenceDataResponse<Sex> | Sex[]>
+  getSpecies: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<ReferenceDataResponse<Species> | Species[]>
+  getBreeds: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<ReferenceDataResponse<Breed> | Breed[]>
   fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   handleNewIntegration: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
