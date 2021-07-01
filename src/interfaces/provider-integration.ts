@@ -36,6 +36,7 @@ export enum Operation {
   Cancel = 'cancel',
   TestsCancel = 'tests.cancel',
   Results = 'results',
+  ResultsPDF = 'results.pdf',
   ResultsBatch = 'results.batch',
   List = 'list',
   Batch = 'batch'
