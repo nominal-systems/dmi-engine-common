@@ -13,6 +13,16 @@ import {
 } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
 
+export enum ProviderId {
+  Demo = 'demo',
+  Idexx = 'idexx',
+  ZoetisV1 = 'zoetis-v1',
+  AntechV3 = 'antech-v3'
+}
+
+/**
+ * @deprecated since version 0.2.0. Please use ProviderId enum instead. Will be removed on 0.3.0.
+ */
 export enum Provider {
   Demo = 'demo',
   Zoetis = 'zoetis-v1',
