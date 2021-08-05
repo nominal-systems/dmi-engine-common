@@ -9,7 +9,8 @@ import {
   Order,
   Result,
   Service,
-  Species
+  Species,
+  Device
 } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
 
@@ -67,6 +68,7 @@ export interface ProviderIntegration {
   getOrderResult: (msg: ApiEvent, context?: MqttContext) => Promise<Result>
   cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>
   cancelOrderTest: (msg: ApiEvent, context?: MqttContext) => Promise<void>
+  getDevices: (msg: ApiEvent, context?: MqttContext) => Promise<Device[]>
   getServices: (
     msg: ApiEvent,
     context?: MqttContext

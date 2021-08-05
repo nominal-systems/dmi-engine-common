@@ -3,7 +3,8 @@ import {
   IdPayload,
   NewIntegrationPayload,
   NullPayloadPayload,
-  OrderTestPayload
+  OrderTestPayload,
+  Test
 } from './payloads'
 
 export enum ResultModality {
@@ -60,6 +61,13 @@ export interface ResultItem {
   runDate: string
   sampleType: string
   items: AnalyteResult[]
+}
+
+export interface Device {
+  serialNumber: string
+  name: string
+  status: string
+  tests?: Test[]
 }
 
 export interface AnalyteResult {
