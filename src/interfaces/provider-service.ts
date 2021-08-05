@@ -65,7 +65,7 @@ export interface ResultItem {
 
 export interface Device {
   serialNumber: string
-  name: string
+  name?: string
   status: string
   tests?: Test[]
 }
