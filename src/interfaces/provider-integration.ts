@@ -35,6 +35,7 @@ export enum Resource {
   Orders = 'orders',
   Breeds = 'breeds',
   Sexes = 'sexes',
+  Devices = 'devices',
   Services = 'services',
   Species = 'species',
   Integration = 'integration'
