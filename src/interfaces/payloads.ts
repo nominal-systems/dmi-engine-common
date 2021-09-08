@@ -1,6 +1,7 @@
 export interface CreateOrderPayload {
   integrationId: string
   id: string
+  antechShortId: string
   patient: Patient
   client: Client
   notes: string
