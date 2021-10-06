@@ -69,7 +69,10 @@ export interface ProviderIntegration {
   getOrderResult: (msg: ApiEvent, context?: MqttContext) => Promise<Result>
   cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>
   cancelOrderTest: (msg: ApiEvent, context?: MqttContext) => Promise<void>
-  getDevices: (msg: ApiEvent, context?: MqttContext) => Promise<Device[]>
+  getDevices: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<ReferenceDataResponse<Device> | Device[]>
   getServices: (
     msg: ApiEvent,
     context?: MqttContext
