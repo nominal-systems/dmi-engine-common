@@ -30,19 +30,19 @@ export interface Service {
 }
 
 export interface Species {
-  id: string
+  code: string
   name: string
 }
 
 export interface Sex {
-  id: string
+  code: string
   name: string
 }
 
 export interface Breed {
-  id: string
+  code: string
   name: string
-  speciesId: string
+  species: string
 }
 
 export interface Result {
