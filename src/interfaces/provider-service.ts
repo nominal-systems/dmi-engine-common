@@ -22,6 +22,7 @@ export interface Order {
 export interface Service {
   code: string
   name: string
+  description?: string
   category?: string
   type?: string
   price?: number
@@ -64,10 +65,15 @@ export interface ResultItem {
 }
 
 export interface Device {
-  serialNumber: string
   name?: string
-  status: string
+  status: DeviceStatus
+  serialNumber: string
   tests?: Test[]
+}
+
+export enum DeviceStatus {
+  Active = 'ACTIVE',
+  Inactive = 'INACTIVE'
 }
 
 export interface AnalyteResult {
@@ -122,6 +128,7 @@ export interface ProviderService<T extends IMetadata> {
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
   cancelOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
   getServices: (payload: NullPayloadPayload, metadata: T) => Promise<Service[]>
+  getDevices: (payload: NullPayloadPayload, metadata: T) => Promise<Device[]>
   getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<Sex[]>
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<Species[]>
   getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<Breed[]>
