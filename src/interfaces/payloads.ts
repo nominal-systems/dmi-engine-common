@@ -26,14 +26,13 @@ export interface Veterinarian {
 
 export interface Patient {
   id: string
-  lastName: string
-  firstName?: string
-  species: string
+  name: string,
   sex: string
-  birthdate: string
+  species: string
   breed: string
-  weight: number
-  weightUnits: string
+  birthdate?: string
+  weightMeasurement?: number
+  weightUnits?: string
 }
 
 export interface Test {
