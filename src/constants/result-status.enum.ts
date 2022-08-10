@@ -1,0 +1,7 @@
+export enum ResultStatus {
+  PENDING = 'PENDING',
+  PARTIAL = 'PARTIAL',
+  COMPLETED = 'COMPLETED',
+  REVISED = 'REVISED',
+  CANCELLED = 'CANCELLED',
+}

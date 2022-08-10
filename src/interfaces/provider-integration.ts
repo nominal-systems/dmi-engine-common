@@ -1,18 +1,9 @@
 import { MqttContext } from '@nestjs/microservices'
 import { ApiEvent } from '../events/api-event'
 import { NewIntegrationPayload } from './payloads'
-import {
-  Breed,
-  Sex,
-  IMetadata,
-  IPayload,
-  Order,
-  Result,
-  Service,
-  Species,
-  Device
-} from './provider-service'
+import { Breed, Device, IMetadata, IPayload, Order, Result, Service, Sex, Species } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
+import { OrderCreatedResponse } from './responses.interface'
 
 export enum ProviderId {
   Demo = 'demo',
@@ -62,7 +53,7 @@ export interface INewIntegrationJobMetadata<T extends IMetadata> {
 }
 
 export interface ProviderIntegration {
-  createOrder: (msg: ApiEvent, context?: MqttContext) => Promise<Order>
+  createOrder: (msg: ApiEvent, context?: MqttContext) => Promise<OrderCreatedResponse>
   getBatchOrders?: (msg: ApiEvent, context?: MqttContext) => Promise<Order[]>
   getBatchResults: (msg: ApiEvent, context?: MqttContext) => Promise<Result[]>
   getOrder: (msg: ApiEvent, context?: MqttContext) => Promise<Order>

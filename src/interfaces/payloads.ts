@@ -1,38 +1,36 @@
 export interface CreateOrderPayload {
-  integrationId: string
   id: string
-  antechShortId: string
-  patient: Patient
-  client: Client
-  notes: string
+  requisitionId: string
+  patient: OrderPatient
+  client: ClientPayload
+  veterinarian: VeterinarianPayload
   tests: Test[]
-  veterinarian: Client
   devices?: string[]
   technician: string
-  editable: boolean
+  notes: string
 }
 
-export interface Client {
+export interface ClientPayload {
   id: string
   lastName: string
   firstName?: string
 }
 
-export interface Veterinarian {
+export interface VeterinarianPayload {
   id: string
   lastName: string
   firstName?: string
 }
 
-export interface Patient {
+export interface OrderPatient {
   id: string
-  name: string,
+  name: string
   sex: string
   species: string
   breed: string
   birthdate?: string
-  weightMeasurement?: number
-  weightUnits?: string
+  weightMeasurement: number
+  weightUnits: string
 }
 
 export interface Test {

@@ -6,6 +6,8 @@ import {
   OrderTestPayload,
   Test
 } from './payloads'
+import { OrderStatus } from '../constants'
+import { OrderCreatedResponse } from './responses.interface'
 
 export enum ResultModality {
   InHouse = 'in-house',
@@ -14,9 +16,44 @@ export enum ResultModality {
 
 export interface Order {
   externalId: string
-  status: string
   manifestUri?: string | null
   submissionUri?: string | null
+  status: OrderStatus
+  patient: Patient
+  client: Client
+  veterinarian: Veterinarian
+  testCodes: Test[]
+  devices?: string[]
+  technician?: string
+  notes?: string
+  editable?: boolean
+}
+
+export interface Patient {
+  name: string
+  sex: string
+  species: string
+  breed?: string
+  birthDate?: string
+  weight?: {
+    measurement: number
+    units: string
+  }
+}
+
+export interface Client {
+  firstName: string
+  lastName: string
+  // TODO(gb): add contact
+  // TODO(gb): add address
+  isDoctor?: boolean
+  isStaff?: boolean
+}
+
+export interface Veterinarian {
+  firstName: string
+  lastName: string
+  // TODO(gb): add contact
 }
 
 export interface Service {
@@ -49,10 +86,15 @@ export interface Result {
   id: string
   orderId: string
   status: string
-  modality: string
-  updatedAt?: string
-  createdAt?: string
-  results: ResultItem[]
+  testResults: TestResult[]
+}
+
+export interface TestResult {
+  code: string
+  name: string
+  deviceId?: string
+  notes?: string
+  items: TestResultItem[]
 }
 
 export interface ResultItem {
@@ -62,6 +104,27 @@ export interface ResultItem {
   runDate: string
   sampleType: string
   items: AnalyteResult[]
+}
+
+export interface TestResultItem {
+  code: string
+  name: string
+  status: string
+  valueString?: string
+  valueQuantity?: {
+    value: number
+    units: string
+  }
+  interpretation?: string
+  referenceRange?: ReferenceRange[]
+  notes?: string
+}
+
+export interface ReferenceRange {
+  type: string
+  text?: string
+  low?: number
+  high?: number
 }
 
 export interface Device {
@@ -120,7 +183,7 @@ export interface IPayload<T extends Payload> {
 }
 
 export interface ProviderService<T extends IMetadata> {
-  createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<Order>
+  createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<OrderCreatedResponse>
   getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
   getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<Result[]>
   getOrder: (payload: IdPayload, metadata: T) => Promise<Order>
