@@ -22,7 +22,7 @@ export interface Order {
   patient: Patient
   client: Client
   veterinarian: Veterinarian
-  testCodes: Test[]
+  tests: Test[]
   devices?: string[]
   technician?: string
   notes?: string
@@ -84,7 +84,7 @@ export interface Breed {
 
 export interface Result {
   id: string
-  orderId: string
+  externalOrderId: string
   status: string
   testResults: TestResult[]
 }

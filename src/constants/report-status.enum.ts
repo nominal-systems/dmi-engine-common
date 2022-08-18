@@ -1,0 +1,6 @@
+export enum ReportStatus {
+  REGISTERED = 'REGISTERED',
+  PARTIAL = 'PARTIAL',
+  FINAL = 'FINAL',
+  CANCELLED = 'CANCELLED',
+}
