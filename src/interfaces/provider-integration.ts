@@ -4,6 +4,7 @@ import { NewIntegrationPayload } from './payloads'
 import { Breed, Device, IMetadata, IPayload, Order, Result, Service, Sex, Species } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
 import { OrderCreatedResponse } from './responses.interface'
+import { ProviderResult } from './provider-result.interface'
 
 export enum ProviderId {
   Demo = 'demo',
@@ -55,7 +56,7 @@ export interface INewIntegrationJobMetadata<T extends IMetadata> {
 export interface ProviderIntegration {
   createOrder: (msg: ApiEvent, context?: MqttContext) => Promise<OrderCreatedResponse>
   getBatchOrders?: (msg: ApiEvent, context?: MqttContext) => Promise<Order[]>
-  getBatchResults: (msg: ApiEvent, context?: MqttContext) => Promise<Result[]>
+  getBatchResults: (msg: ApiEvent, context?: MqttContext) => Promise<ProviderResult[]>
   getOrder: (msg: ApiEvent, context?: MqttContext) => Promise<Order>
   getOrderResult: (msg: ApiEvent, context?: MqttContext) => Promise<Result>
   cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>

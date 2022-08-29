@@ -8,6 +8,7 @@ import {
 } from './payloads'
 import { OrderStatus } from '../constants'
 import { OrderCreatedResponse } from './responses.interface'
+import { ProviderResult } from './provider-result.interface'
 
 export enum ResultModality {
   InHouse = 'in-house',
@@ -185,7 +186,7 @@ export interface IPayload<T extends Payload> {
 export interface ProviderService<T extends IMetadata> {
   createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<OrderCreatedResponse>
   getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
-  getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<Result[]>
+  getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<ProviderResult[]>
   getOrder: (payload: IdPayload, metadata: T) => Promise<Order>
   getOrderResult: (payload: IdPayload, metadata: T) => Promise<Result>
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
