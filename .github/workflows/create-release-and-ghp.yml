@@ -7,8 +7,22 @@ on:
 name: Create Release
 
 jobs:
+  publish-ghp:
+    name: Publish GitHub Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://npm.pkg.github.com/
+      - run: npm install
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build:
     name: Create Release
+    needs: publish-ghp
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,17 +37,3 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-  publish-ghp:
-    needs: build
-    name: Publish GitHub Package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
-          registry-url: https://npm.pkg.github.com/
-      - run: npm install
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
