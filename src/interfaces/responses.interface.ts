@@ -9,6 +9,7 @@ export interface OrderCreatedResponse {
 }
 
 export interface BatchResultsResponse {
-  batchId: string
+  batchId?: string
+  hasMoreResults?: boolean
   results: Result[]
 }

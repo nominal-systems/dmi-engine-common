@@ -7,7 +7,8 @@ import {
   Test
 } from './payloads'
 import { OrderStatus } from '../constants'
-import { OrderCreatedResponse } from './responses.interface'
+import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
+import { ReferenceDataResponse } from './reference-data-response'
 import { ProviderResult } from './provider-result.interface'
 
 export enum ResultModality {
@@ -57,12 +58,17 @@ export interface Veterinarian {
   // TODO(gb): add contact
 }
 
+export enum ServiceType {
+  IN_HOUSE = 'IN_HOUSE',
+  PAID = 'PAID'
+}
+
 export interface Service {
   code: string
   name: string
   description?: string
   category?: string
-  type?: string
+  type?: ServiceType
   price?: number
   currency?: string
 }
@@ -185,17 +191,17 @@ export interface IPayload<T extends Payload> {
 
 export interface ProviderService<T extends IMetadata> {
   createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<OrderCreatedResponse>
-  getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
-  getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<ProviderResult[]>
+  // getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
+  getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<BatchResultsResponse>
   getOrder: (payload: IdPayload, metadata: T) => Promise<Order>
   getOrderResult: (payload: IdPayload, metadata: T) => Promise<Result>
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
   cancelOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
   getServices: (payload: NullPayloadPayload, metadata: T) => Promise<Service[]>
   getDevices: (payload: NullPayloadPayload, metadata: T) => Promise<Device[]>
-  getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<Sex[]>
-  getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<Species[]>
-  getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<Breed[]>
+  getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Sex>>
+  getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Species>>
+  getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Breed>>
 }
 
 export interface PdfResults<T extends IMetadata> {
