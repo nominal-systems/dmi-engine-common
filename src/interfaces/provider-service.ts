@@ -9,7 +9,6 @@ import {
 import { OrderStatus } from '../constants'
 import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
 import { ReferenceDataResponse } from './reference-data-response'
-import { ProviderResult } from './provider-result.interface'
 
 export enum ResultModality {
   InHouse = 'in-house',
@@ -91,7 +90,7 @@ export interface Breed {
 
 export interface Result {
   id: string
-  externalOrderId: string
+  orderId: string
   status: string
   testResults: TestResult[]
 }

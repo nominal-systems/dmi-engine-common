@@ -8,5 +8,5 @@ export interface ResultMapper {
   mapTestResults: (array: any[]) => TestResult[]
   mapTestResultItemStatus: (status: string) => TestResultItemStatus
   mapTestResultItem: (value: unknown) => TestResultItem
-  mapTestResultItems: (array: unknown[], fn: (value: unknown) => TestResultItem) => TestResultItem[]
+  mapTestResultItems: (array: unknown[]) => TestResultItem[]
 }
