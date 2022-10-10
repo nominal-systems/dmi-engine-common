@@ -1,5 +1,6 @@
 import { AxiosResponse } from 'axios'
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class TestUtils {
   static mockHttpResponse (
     status: number,
