@@ -6,7 +6,7 @@ import {
   OrderTestPayload,
   Test
 } from './payloads'
-import { OrderStatus } from '../constants'
+import { OrderStatus, ResultStatus } from '../constants'
 import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
 import { ReferenceDataResponse } from './reference-data-response'
 
@@ -91,7 +91,7 @@ export interface Breed {
 export interface Result {
   id: string
   orderId: string
-  status: string
+  status: ResultStatus
   testResults: TestResult[]
 }
 
