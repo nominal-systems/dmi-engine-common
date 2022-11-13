@@ -9,6 +9,7 @@ import {
 import { OrderStatus, ResultStatus } from '../constants'
 import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
 import { ReferenceDataResponse } from './reference-data-response'
+import { TestResultItemInterpretationCode } from './results.interface'
 
 export enum ResultModality {
   InHouse = 'in-house',
@@ -121,7 +122,10 @@ export interface TestResultItem {
     value: number
     units: string
   }
-  interpretation?: string
+  interpretation?: {
+    code: TestResultItemInterpretationCode
+    text: string
+  }
   referenceRange?: ReferenceRange[]
   notes?: string
 }

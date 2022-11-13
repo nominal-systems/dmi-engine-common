@@ -1,5 +1,5 @@
 import { ReferenceRange } from './provider-service'
-import { TestResultItemStatus } from './results.interface'
+import { TestResultItemInterpretationCode, TestResultItemStatus } from './results.interface'
 
 export interface ProviderResult {
   id: string
@@ -25,7 +25,10 @@ export interface ProviderTestResultItem {
     value: number
     units: string
   }
-  interpretation?: string
+  interpretation?: {
+    code: TestResultItemInterpretationCode
+    text: string
+  }
   referenceRange?: ReferenceRange[]
   notes?: string
 }
