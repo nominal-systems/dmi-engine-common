@@ -5,7 +5,7 @@ import {
   NullPayloadPayload,
   OrderTestPayload,
   Test
-} from './payloads'
+} from './payloads.interface'
 import { OrderStatus, ResultStatus } from '../constants'
 import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
 import { ReferenceDataResponse } from './reference-data-response'
@@ -18,25 +18,31 @@ export enum ResultModality {
 
 export interface Order {
   externalId: string
-  manifestUri?: string | null
-  submissionUri?: string | null
   status: OrderStatus
   patient: Patient
   client: Client
-  veterinarian: Veterinarian
   tests: Test[]
-  devices?: string[]
+  veterinarian: Veterinarian
   technician?: string
+  devices?: string[]
+  manifestUri?: string
+  submissionUri?: string
   notes?: string
   editable?: boolean
 }
 
+export interface Identifier {
+  system: string
+  value: string
+}
+
 export interface Patient {
+  identifier?: Identifier[]
   name: string
   sex: string
   species: string
   breed?: string
-  birthDate?: string
+  birthdate?: string
   weight?: {
     measurement: number
     units: string
@@ -44,6 +50,7 @@ export interface Patient {
 }
 
 export interface Client {
+  // TODO(gb): provider client Id?
   firstName: string
   lastName: string
   // TODO(gb): add contact
@@ -53,8 +60,8 @@ export interface Client {
 }
 
 export interface Veterinarian {
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   // TODO(gb): add contact
 }
 
@@ -194,7 +201,7 @@ export interface IPayload<T extends Payload> {
 
 export interface ProviderService<T extends IMetadata> {
   createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<OrderCreatedResponse>
-  // getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
+  getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
   getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<BatchResultsResponse>
   getOrder: (payload: IdPayload, metadata: T) => Promise<Order>
   getOrderResult: (payload: IdPayload, metadata: T) => Promise<Result>

@@ -28,10 +28,10 @@ export interface OrderPatient {
   name: string
   sex: string
   species: string
-  breed: string
+  breed?: string
   birthdate?: string
-  weightMeasurement: number
-  weightUnits: string
+  weightMeasurement?: number
+  weightUnits?: string
 }
 
 export interface Test {
