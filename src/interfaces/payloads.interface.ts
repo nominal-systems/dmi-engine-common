@@ -52,3 +52,7 @@ export type NullPayloadPayload = null
 export interface NewIntegrationPayload {
   integrationId: string
 }
+
+export interface ExistingIntegrationPayload {
+  integrationId: string
+}

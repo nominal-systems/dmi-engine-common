@@ -1,6 +1,6 @@
 import { MqttContext } from '@nestjs/microservices'
 import { ApiEvent } from '../events/api-event'
-import { NewIntegrationPayload } from './payloads.interface'
+import { ExistingIntegrationPayload, NewIntegrationPayload } from './payloads.interface'
 import { Breed, Device, IMetadata, IPayload, Order, Result, Service, Sex, Species } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
 import { OrderCreatedResponse } from './responses.interface'
@@ -42,7 +42,8 @@ export enum Operation {
   ResultsPDF = 'results.pdf',
   ResultsBatch = 'results.batch',
   List = 'list',
-  Batch = 'batch'
+  Batch = 'batch',
+  Pause = 'pause'
 }
 
 export interface INewIntegrationJobMetadata<T extends IMetadata> {
@@ -50,6 +51,13 @@ export interface INewIntegrationJobMetadata<T extends IMetadata> {
   type: string
   version: string
   data: IPayload<NewIntegrationPayload> & T
+}
+
+export interface IExistingIntegrationJobMetadata<T extends IMetadata> {
+  id: string
+  type: string
+  version: string
+  data: IPayload<ExistingIntegrationPayload> & T
 }
 
 export interface ProviderIntegration {
