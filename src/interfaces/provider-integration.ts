@@ -9,7 +9,8 @@ export enum ProviderId {
   Demo = 'demo',
   Idexx = 'idexx',
   ZoetisV1 = 'zoetis-v1',
-  AntechV3 = 'antech-v3'
+  AntechV3 = 'antech-v3',
+  Heska = 'heska'
 }
 
 /**
@@ -19,7 +20,8 @@ export enum Provider {
   Demo = 'demo',
   Zoetis = 'zoetis-v1',
   Idexx = 'idexx',
-  Antech = 'antech'
+  Antech = 'antech',
+  Heska = 'heska'
 }
 
 export enum Resource {
