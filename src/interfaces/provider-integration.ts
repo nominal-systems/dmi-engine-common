@@ -93,4 +93,5 @@ export interface ProviderIntegration {
   fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   handleNewIntegration: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
+  handleIntegrationDelete: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
 }
