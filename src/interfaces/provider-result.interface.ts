@@ -9,6 +9,7 @@ export interface ProviderResult {
 }
 
 export interface ProviderTestResult {
+  seq?: number
   code: string
   name: string
   deviceId?: string
@@ -17,6 +18,7 @@ export interface ProviderTestResult {
 }
 
 export interface ProviderTestResultItem {
+  seq?: number
   code: string
   name: string
   status: TestResultItemStatus

@@ -104,6 +104,7 @@ export interface Result {
 }
 
 export interface TestResult {
+  seq?: number
   code: string
   name: string
   deviceId?: string
@@ -121,6 +122,7 @@ export interface ResultItem {
 }
 
 export interface TestResultItem {
+  seq?: number
   code: string
   name: string
   status: string
