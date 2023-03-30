@@ -8,7 +8,7 @@ export interface OrderMapper {
   mapPatientPayload: (payload: OrderPatient) => unknown
   mapClientPayload: (payload: ClientPayload) => unknown
   mapTestPayload: (payload: Test[]) => unknown
-  mapOrder: (order: unknown) => Order
+  mapOrder: (order: unknown, metadata?: any) => Order
   mapOrderStatus: (status: string) => OrderStatus
   mapOrderPatient: (patient: unknown) => Patient
   mapOrderClient: (client: unknown) => Client
