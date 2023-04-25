@@ -99,6 +99,7 @@ export interface Breed {
 export interface Result {
   id: string
   orderId: string
+  accession?: string
   status: ResultStatus
   testResults: TestResult[]
 }
