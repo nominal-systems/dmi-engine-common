@@ -18,7 +18,7 @@ export enum ProviderId {
  */
 export enum Provider {
   Demo = 'demo',
-  Zoetis = 'zoetis-v1',
+  Zoetis = 'zoetis',
   Idexx = 'idexx',
   Antech = 'antech',
   Heska = 'heska'
