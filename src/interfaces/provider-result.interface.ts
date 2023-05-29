@@ -1,9 +1,10 @@
-import { ReferenceRange } from './provider-service'
+import { Order, ReferenceRange } from './provider-service'
 import { TestResultItemInterpretationCode, TestResultItemStatus } from './results.interface'
 
 export interface ProviderResult {
   id: string
   orderId: string
+  order?: Order
   status: string
   testResults: ProviderTestResult[]
 }
