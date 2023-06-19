@@ -26,6 +26,7 @@ export enum Provider {
 
 export enum Resource {
   Orders = 'orders',
+  Results = 'results',
   Breeds = 'breeds',
   Sexes = 'sexes',
   Devices = 'devices',
@@ -45,7 +46,8 @@ export enum Operation {
   ResultsBatch = 'results.batch',
   List = 'list',
   Batch = 'batch',
-  Pause = 'pause'
+  Pause = 'pause',
+  Submit = 'submit'
 }
 
 export interface INewIntegrationJobMetadata<T extends IMetadata> {
