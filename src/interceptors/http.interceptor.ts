@@ -22,6 +22,7 @@ export class AxiosInterceptor implements OnModuleInit {
       (response) => {
         const url = response.config.url
         const body = response.data
+
         if (this.filter(url, body, response)) {
           this.handleResponse(response)
         }
@@ -48,6 +49,6 @@ export class AxiosInterceptor implements OnModuleInit {
   private handleResponse (response): any {
     const { provider, url, body } = this.extractor(response)
 
-    console.log('Provider', provider, 'Url', url, 'Body', body)
+    console.log('Provider:', provider, 'Url:', url, 'Body:', body)
   }
 }
