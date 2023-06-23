@@ -35,15 +35,15 @@ export class AxiosInterceptor implements OnModuleInit {
       })
   }
 
-  protected filter (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): boolean {
+  protected filter (url: string, body: any, response: AxiosResponse<any>): boolean {
     return true
   }
 
-  protected extract (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): ProviderRawData {
+  protected extract (url: string, body: any, response: AxiosResponse<any>): ProviderRawData {
     return { provider: this.provider, url: url, body }
   }
 
-  private handleResponse (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): any {
+  private handleResponse (url: string, body: any, response: AxiosResponse<any>): any {
     const { provider } = this.extract(url, body, response)
 
     console.log('Provider:', provider, 'Url:', url, 'Body:', body)
