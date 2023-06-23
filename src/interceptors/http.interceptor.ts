@@ -43,7 +43,6 @@ export class AxiosInterceptor implements OnModuleInit {
     return { provider: this.provider, url: url, body }
   }
 
-  // CAMBIAR ANY ANTES DE COMMITEAR
   private handleResponse (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): any {
     const { provider } = this.extract(url, body, response)
 
