@@ -1,13 +1,13 @@
-// src/common/axios.interceptor.ts
-
-import { Injectable, OnModuleInit, Logger, HttpService, Module, HttpModule } from '@nestjs/common'
+import { HttpModule, HttpService, Injectable, Logger, Module, OnModuleInit } from '@nestjs/common'
 import { AxiosResponse } from 'axios'
 import { ProviderRawData } from '../interfaces'
+
 @Module({ imports: [HttpModule] })
 
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
+
   constructor (
     private readonly httpService: HttpService
   ) {
@@ -35,15 +35,19 @@ export class AxiosInterceptor implements OnModuleInit {
       })
   }
 
-  protected filter (url: string, body: any, response: AxiosResponse<any>): boolean {
+  protected filter (url: string, body: any, response: AxiosResponse): boolean {
     return true
   }
 
-  protected extract (url: string, body: any, response: AxiosResponse<any>): ProviderRawData {
-    return { provider: this.provider, url: url, body }
+  protected extract (url: string, body: any, response: AxiosResponse): ProviderRawData {
+    return {
+      provider: this.provider,
+      url,
+      body
+    }
   }
 
-  private handleResponse (url: string, body: any, response: AxiosResponse<any>): any {
+  private handleResponse (url: string, body: any, response: AxiosResponse): any {
     const { provider } = this.extract(url, body, response)
 
     console.log('Provider:', provider, 'Url:', url, 'Body:', body)
