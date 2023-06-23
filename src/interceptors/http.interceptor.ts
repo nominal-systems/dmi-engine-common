@@ -1,15 +1,15 @@
 // src/common/axios.interceptor.ts
 
-import { Injectable, OnModuleInit, Logger, HttpService, Module, HttpModule, Inject } from '@nestjs/common'
-import { ProviderRawData } from './../interfaces/provider-raw-data.interface'
-export type provider = string
-@Module({ imports: [HttpModule], providers: [{ provide: 'Provider', useValue: '' }], exports: [{ provide: 'Provider', useValue: '' }] })
+import { Injectable, OnModuleInit, Logger, HttpService, Module, HttpModule } from '@nestjs/common'
+import { AxiosResponse } from 'axios'
+import { ProviderRawData } from '../interfaces'
+@Module({ imports: [HttpModule] })
 
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
+  protected provider: string
   constructor (
-    private readonly httpService: HttpService,
-    @Inject('Provider') private readonly provider: provider
+    private readonly httpService: HttpService
   ) {
 
   }
@@ -20,11 +20,11 @@ export class AxiosInterceptor implements OnModuleInit {
     const axios = this.httpService.axiosRef
     axios.interceptors.response.use(
       (response) => {
-        const url = response.config.url
+        const url: string = response.config.url as string
         const body = response.data
 
         if (this.filter(url, body, response)) {
-          this.handleResponse(response)
+          this.handleResponse(url, body, response)
         }
 
         return response
@@ -35,19 +35,17 @@ export class AxiosInterceptor implements OnModuleInit {
       })
   }
 
-  protected filter (url, body, response): boolean {
+  protected filter (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): boolean {
     return true
   }
 
-  protected extractor (response): ProviderRawData {
-    const url = response.config.url
-    const body = response.data
-    return { provider: this.provider, url, body }
+  protected extract (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): ProviderRawData {
+    return { provider: this.provider, url: url, body }
   }
 
   // CAMBIAR ANY ANTES DE COMMITEAR
-  private handleResponse (response): any {
-    const { provider, url, body } = this.extractor(response)
+  private handleResponse (url: string, body: Record<string, unknown>, response: AxiosResponse<any>): any {
+    const { provider } = this.extract(url, body, response)
 
     console.log('Provider:', provider, 'Url:', url, 'Body:', body)
   }
