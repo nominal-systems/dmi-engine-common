@@ -47,9 +47,14 @@ export class AxiosInterceptor implements OnModuleInit {
     }
   }
 
+  // This could be protected to allow it to be overwritten
   private handleResponse (url: string, body: any, response: AxiosResponse): any {
     const { provider } = this.extract(url, body, response)
 
+    // Just log `${method} ${url}` with a logger (not console.log)
     console.log('Provider:', provider, 'Url:', url, 'Body:', body)
+
+    // TODO: save response to database
+    // Send this to the API to be saved
   }
 }
