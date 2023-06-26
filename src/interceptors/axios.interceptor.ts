@@ -1,15 +1,15 @@
-import { HttpModule, HttpService, Injectable, Logger, Module, OnModuleInit } from '@nestjs/common'
+import { HttpService, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { AxiosResponse } from 'axios'
 import { ProviderRawData } from '../interfaces'
-
-@Module({ imports: [HttpModule] })
+import { ClientProxy } from '@nestjs/microservices'
 
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
 
   constructor (
-    private readonly httpService: HttpService
+    private readonly httpService: HttpService,
+    @Inject('API_SERVICE') readonly client: ClientProxy
   ) {
 
   }
@@ -47,12 +47,18 @@ export class AxiosInterceptor implements OnModuleInit {
     }
   }
 
-  // This could be protected to allow it to be overwritten
-  private handleResponse (url: string, body: any, response: AxiosResponse): any {
+  protected handleResponse (url: string, body: any, response: AxiosResponse): any {
     const { provider } = this.extract(url, body, response)
+    const method: string = response.request.method
+    const logger = new Logger(`${provider} Service`)
 
-    // Just log `${method} ${url}` with a logger (not console.log)
-    console.log('Provider:', provider, 'Url:', url, 'Body:', body)
+    logger.debug(`${method} ${url}`)
+
+    this.client.emit('raw_data', {
+      provider,
+      body,
+      url
+    })
 
     // TODO: save response to database
     // Send this to the API to be saved

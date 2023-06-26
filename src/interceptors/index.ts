@@ -1,1 +1,1 @@
-export * from './http.interceptor'
+export * from './axios.interceptor'
