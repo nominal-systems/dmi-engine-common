@@ -6,6 +6,7 @@ import { ClientProxy } from '@nestjs/microservices'
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
+  private readonly logger = new Logger('Axios')
 
   constructor (
     private readonly httpService: HttpService,
@@ -15,8 +16,6 @@ export class AxiosInterceptor implements OnModuleInit {
   }
 
   public onModuleInit (): any {
-    const logger = new Logger('Axios')
-
     const axios = this.httpService.axiosRef
     axios.interceptors.response.use(
       (response) => {
@@ -30,7 +29,7 @@ export class AxiosInterceptor implements OnModuleInit {
         return response
       },
       async (err) => {
-        logger.error(err)
+        this.logger.error(err)
         return await Promise.reject(err)
       })
   }
@@ -50,9 +49,8 @@ export class AxiosInterceptor implements OnModuleInit {
   protected handleResponse (url: string, body: any, response: AxiosResponse): any {
     const { provider } = this.extract(url, body, response)
     const method: string = response.request.method
-    const logger = new Logger(`${provider} Service`)
 
-    logger.debug(`${method} ${url}`)
+    this.logger.debug(`${method} ${url}`)
 
     this.client.emit('raw_data', {
       provider,
