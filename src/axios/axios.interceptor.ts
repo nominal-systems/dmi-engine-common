@@ -6,7 +6,7 @@ import { ClientProxy } from '@nestjs/microservices'
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
-  private readonly logger = new Logger('Axios')
+  private readonly logger = new Logger(AxiosInterceptor.name)
 
   constructor (
     private readonly httpService: HttpService,
