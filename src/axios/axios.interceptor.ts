@@ -42,6 +42,7 @@ export class AxiosInterceptor implements OnModuleInit {
     return {
       provider: this.provider,
       url,
+      method: response.request.method,
       body
     }
   }
@@ -55,10 +56,8 @@ export class AxiosInterceptor implements OnModuleInit {
     this.client.emit('raw_data', {
       provider,
       body,
-      url
+      url,
+      method
     })
-
-    // TODO: save response to database
-    // Send this to the API to be saved
   }
 }
