@@ -23,12 +23,10 @@ export class AxiosInterceptor implements OnModuleInit {
         const body = response.data
         if (this.debug(url, body, response)) {
           const method: string = response.request.method
-          this.logger.debug(`Provider: ${this.provider} Status: ${response.status} Method: ${method} URL: ${url} 
-          BODY:${JSON.stringify(body)}`)
-        } else {
-          if (this.filter(url, body, response)) {
-            this.handleResponse(url, body, response)
-          }
+          this.logger.debug(`${method} ${url} -> ${response.status}`)
+        }
+        if (this.filter(url, body, response)) {
+          this.handleResponse(url, body, response)
         }
         return response
       },
