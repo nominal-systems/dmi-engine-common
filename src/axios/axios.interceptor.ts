@@ -59,7 +59,10 @@ export class AxiosInterceptor implements OnModuleInit {
   }
 
   protected handleResponse (url: string, body: any, response: AxiosResponse): any {
-    const { provider, status } = this.extract(url, body, response)
+    const {
+      provider,
+      status
+    } = this.extract(url, body, response)
     const method: string = response.request.method
     this.logger.debug(`${method} ${url}`)
 
