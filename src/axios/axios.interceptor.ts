@@ -12,7 +12,7 @@ export class AxiosInterceptor implements OnModuleInit {
     private readonly httpService: HttpService,
     @Inject('API_SERVICE') readonly client: ClientProxy
   ) {
-
+    this.logger.setContext(this.constructor.name)
   }
 
   public onModuleInit (): any {
@@ -40,11 +40,11 @@ export class AxiosInterceptor implements OnModuleInit {
       })
   }
 
-  protected filter (url: string, body: any, response: AxiosResponse): boolean {
+  public filter (url: string, body: any, response: AxiosResponse): boolean {
     return true
   }
 
-  protected extract (url: string, body: any, response: AxiosResponse): ProviderRawData {
+  public extract (url: string, body: any, response: AxiosResponse): ProviderRawData {
     return {
       provider: this.provider,
       status: response.status,
@@ -54,7 +54,7 @@ export class AxiosInterceptor implements OnModuleInit {
     }
   }
 
-  protected debug (url: string, body: any, response: AxiosResponse): boolean {
+  public debug (url: string, body: any, response: AxiosResponse): boolean {
     return false
   }
 
