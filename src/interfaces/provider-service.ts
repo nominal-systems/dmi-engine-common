@@ -237,3 +237,7 @@ export interface SubmissionUrl<T extends IMetadata> {
 export interface NewTests<T extends IMetadata> {
   addOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
 }
+
+export interface OrphanResults<T extends IMetadata> {
+  getOrphanResults: (payload: NullPayloadPayload, metadata: T) => Promise<BatchResultsResponse>
+}
