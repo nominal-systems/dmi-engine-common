@@ -45,7 +45,7 @@ export class AxiosInterceptor implements OnModuleInit {
   }
 
   public extract (url: string, body: any, response: AxiosResponse): ProviderRawData {
-    const extractedData: ProviderRawData = {
+    return {
       provider: this.provider,
       status: response.status,
       method: response.request.method,
@@ -53,8 +53,6 @@ export class AxiosInterceptor implements OnModuleInit {
       body,
       payload: response.config.data
     }
-
-    return extractedData
   }
 
   public debug (url: string, body: any, response: AxiosResponse): boolean {
