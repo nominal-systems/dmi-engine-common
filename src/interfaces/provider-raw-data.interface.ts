@@ -4,4 +4,5 @@ export interface ProviderRawData {
   method: string
   url: string
   body: any
+  payload?: any
 }
