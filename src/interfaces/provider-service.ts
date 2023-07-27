@@ -20,7 +20,7 @@ export interface Order {
   externalId: string
   status: OrderStatus
   patient: Patient
-  client: Client
+  client?: Client
   tests: Test[]
   veterinarian: Veterinarian
   technician?: string
