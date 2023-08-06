@@ -16,7 +16,9 @@ export enum TestResultItemInterpretationCode {
   NORMAL = 'N',
   ABNORMAL = 'A',
   CRITICAL_LOW = 'LL',
+  PROBABLE_LOW = 'PL',
   LOW = 'L',
   HIGH = 'H',
+  PROBABLE_HIGH = 'PH',
   CRITICAL_HIGH = 'HH'
 }
