@@ -38,6 +38,7 @@ export enum Resource {
 export enum Operation {
   Get = 'get',
   Create = 'create',
+  Update = 'update',
   Remove = 'remove',
   Cancel = 'cancel',
   TestsCancel = 'tests.cancel',
@@ -96,4 +97,5 @@ export interface ProviderIntegration {
   fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   handleNewIntegration: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   handleIntegrationDelete: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
+  handleIntegrationUpdate: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
 }
