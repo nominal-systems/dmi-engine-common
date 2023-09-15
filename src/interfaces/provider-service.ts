@@ -26,9 +26,16 @@ export interface Order {
   technician?: string
   devices?: string[]
   manifestUri?: string
+  manifest?: Attachment
   submissionUri?: string
   notes?: string
   editable?: boolean
+}
+
+export interface Attachment {
+  contentType?: string
+  data?: string
+  uri?: string
 }
 
 export interface Identifier {
