@@ -1,10 +1,10 @@
-import { Order, Result } from './provider-service'
+import { Attachment, Order, Result } from './provider-service'
 import { OrderStatus } from '../constants'
 
 export interface OrderCreatedResponse {
   externalId: string
   status: OrderStatus
-  manifestUri?: string | null
+  manifest?: Attachment | null
   submissionUri?: string | null
 }
 

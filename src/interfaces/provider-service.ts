@@ -25,7 +25,6 @@ export interface Order {
   veterinarian: Veterinarian
   technician?: string
   devices?: string[]
-  manifestUri?: string
   manifest?: Attachment
   submissionUri?: string
   notes?: string
