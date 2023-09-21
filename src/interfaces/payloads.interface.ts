@@ -1,5 +1,4 @@
 export interface CreateOrderPayload {
-  id: string
   requisitionId: string
   patient: OrderPatient
   client: ClientPayload
