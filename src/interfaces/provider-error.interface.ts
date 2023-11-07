@@ -2,7 +2,7 @@ export interface ProviderErrorInterface {
   provider: string
   message: string
   code: number
-  error: string
+  error: any
 }
 
 export class ProviderError extends Error {
