@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@nestjs/bull": "^0.6.3",
-    "@nestjs/common": "^7.6.17",
+    "@nestjs/common": "7.6.17",
     "@nestjs/config": "^0.6.3",
     "@nestjs/core": "^7.6.17",
     "@nestjs/microservices": "^7.6.17",
