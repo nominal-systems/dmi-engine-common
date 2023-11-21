@@ -222,6 +222,7 @@ export interface ProviderService<T extends IMetadata> {
   getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Sex>>
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Species>>
   getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Breed>>
+  createRequisitionId: (payload: NullPayloadPayload, metadata: T) => string
 }
 
 export interface PdfResults<T extends IMetadata> {

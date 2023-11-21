@@ -6,6 +6,7 @@ export interface OrderCreatedResponse {
   status: OrderStatus
   manifest?: Attachment | null
   submissionUri?: string | null
+  requisitionId?: string | null
 }
 
 export interface BatchResultsResponse {
