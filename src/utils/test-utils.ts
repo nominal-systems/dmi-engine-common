@@ -1,4 +1,3 @@
-import { HttpException } from '@nestjs/common'
 import { AxiosResponse } from 'axios'
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
