@@ -19,4 +19,24 @@ export class TestUtils {
   static mockHttpOkResponse (data: any): AxiosResponse {
     return this.mockHttpResponse(200, 'OK', data)
   }
+
+  static async mockHttpErrorResponse (
+    status: number,
+    statusText: string,
+    errors: any
+  ): Promise<AxiosResponse<any>> {
+    const errorResponse = {
+      status: status,
+      statusText: statusText,
+      headers: {},
+      config: {
+        url: 'http://url.com',
+        data: ''
+      },
+      response: errors
+    }
+
+    const error = errorResponse
+    throw await Promise.reject(error)
+  }
 }
