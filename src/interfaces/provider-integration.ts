@@ -48,7 +48,8 @@ export enum Operation {
   List = 'list',
   Batch = 'batch',
   Pause = 'pause',
-  Submit = 'submit'
+  Submit = 'submit',
+  Manifest = 'manifest'
 }
 
 export interface INewIntegrationJobMetadata<T extends IMetadata> {
@@ -98,4 +99,5 @@ export interface ProviderIntegration {
   handleNewIntegration: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   handleIntegrationDelete: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
   handleIntegrationUpdate: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
+  getManifest?: (msg: ApiEvent, context?: MqttContext) => Promise<any>
 }
