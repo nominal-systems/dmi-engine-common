@@ -8,6 +8,7 @@ export interface CreateOrderPayload {
   editable?: boolean
   technician: string
   notes: string
+  labRequisitionInfo?: any
 }
 
 export interface ClientPayload {
