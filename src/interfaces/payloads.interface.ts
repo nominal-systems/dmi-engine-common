@@ -1,3 +1,5 @@
+import { Identifier } from './provider-service'
+
 export interface CreateOrderPayload {
   requisitionId: string
   patient: OrderPatient
@@ -14,6 +16,7 @@ export interface ClientPayload {
   id: string
   lastName: string
   firstName?: string
+  identifier?: Identifier[]
 }
 
 export interface VeterinarianPayload {
@@ -31,6 +34,7 @@ export interface OrderPatient {
   birthdate?: string
   weightMeasurement?: number
   weightUnits?: string
+  identifier?: Identifier[]
 }
 
 export interface Test {
