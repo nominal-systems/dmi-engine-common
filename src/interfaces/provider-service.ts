@@ -84,8 +84,19 @@ export interface Service {
   type?: ServiceType
   price?: number
   currency?: string
+  labRequisitionInfo?: LabRequisitionInfo[]
 }
 
+export interface LabRequisitionInfo {
+  name: string
+  type: LabRequisitionType
+  required: boolean
+}
+export enum LabRequisitionType {
+  STRING = 'string',
+  NUMBER = 'number',
+  BOOLEAN = 'boolean'
+}
 export interface Species {
   code: string
   name: string
