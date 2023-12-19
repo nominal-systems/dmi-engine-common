@@ -89,14 +89,10 @@ export interface Service {
 
 export interface LabRequisitionInfo {
   name: string
-  type: LabRequisitionType
+  type: 'string' | 'number' | 'boolean'
   required: boolean
 }
-export enum LabRequisitionType {
-  STRING = 'string',
-  NUMBER = 'number',
-  BOOLEAN = 'boolean'
-}
+
 export interface Species {
   code: string
   name: string
