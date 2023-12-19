@@ -1,5 +1,5 @@
 import { ClientPayload, CreateOrderPayload, OrderPatient, Test, VeterinarianPayload } from './payloads.interface'
-import { Client, Order, Patient, Veterinarian } from './provider-service'
+import { Client, Identifier, Order, Patient, Veterinarian } from './provider-service'
 import { OrderStatus } from '../constants'
 
 export interface OrderMapper {
@@ -14,5 +14,5 @@ export interface OrderMapper {
   mapOrderClient: (client: unknown) => Client
   mapOrderTest: (test: unknown) => Test
   mapOrderVeterinarian: (veterinarian: unknown) => Veterinarian
-  getIdFromIdentifier: (system: string, identifier?: any[]) => string | undefined
+  getIdFromIdentifier: (system: string, identifier?: Identifier[]) => string | undefined
 }
