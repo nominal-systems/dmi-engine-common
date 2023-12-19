@@ -14,4 +14,5 @@ export interface OrderMapper {
   mapOrderClient: (client: unknown) => Client
   mapOrderTest: (test: unknown) => Test
   mapOrderVeterinarian: (veterinarian: unknown) => Veterinarian
+  getIdFromIdentifier: (system: string, identifier?: any[]) => string | undefined
 }
