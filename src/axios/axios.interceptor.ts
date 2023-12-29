@@ -51,6 +51,7 @@ export class AxiosInterceptor implements OnModuleInit {
       method: response.request.method,
       url,
       body,
+      headers: response.headers,
       payload: response.config.data
     }
   }
@@ -63,7 +64,8 @@ export class AxiosInterceptor implements OnModuleInit {
     const {
       provider,
       status,
-      payload
+      payload,
+      headers
     } = this.extract(url, body, response)
     const method: string = response.request.method
     this.logger.debug(`${method} ${url}`)
@@ -74,6 +76,7 @@ export class AxiosInterceptor implements OnModuleInit {
       method,
       url,
       body,
+      headers,
       payload
     })
   }

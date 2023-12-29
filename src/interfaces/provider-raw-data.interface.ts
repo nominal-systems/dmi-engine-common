@@ -3,6 +3,7 @@ export interface ProviderRawData {
   status: number
   method: string
   url: string
+  headers: any
   body: any
   payload?: any
 }
