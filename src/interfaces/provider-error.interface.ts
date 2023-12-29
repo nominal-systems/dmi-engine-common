@@ -3,6 +3,7 @@ export interface ProviderErrorInterface {
   message: string
   code: number
   error: any
+  payload: any
 }
 
 export class ProviderError extends Error {
