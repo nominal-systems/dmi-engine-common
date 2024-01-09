@@ -57,6 +57,7 @@ export interface Patient {
 
 export interface Client {
   // TODO(gb): provider client Id?
+  identifier?: Identifier[]
   firstName: string
   lastName: string
   // TODO(gb): add contact
