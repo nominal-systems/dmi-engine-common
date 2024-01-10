@@ -226,6 +226,7 @@ export interface ProviderService<T extends IMetadata> {
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
   cancelOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
   getServices: (payload: NullPayloadPayload, metadata: T) => Promise<Service[]>
+  getServiceByCode: (payload: IdPayload, metadata: T) => Promise<Service>
   getDevices: (payload: NullPayloadPayload, metadata: T) => Promise<Device[]>
   getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Sex>>
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Species>>
