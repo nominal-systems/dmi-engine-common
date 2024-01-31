@@ -60,3 +60,8 @@ export interface NewIntegrationPayload {
 export interface ExistingIntegrationPayload {
   integrationId: string
 }
+
+export interface ServiceCodePayload {
+  code: string
+  labRequisitionParameters?: any
+}
