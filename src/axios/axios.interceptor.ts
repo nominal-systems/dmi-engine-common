@@ -40,27 +40,43 @@ export class AxiosInterceptor implements OnModuleInit {
       })
   }
 
-  public filter (url: string, body: any, response: AxiosResponse): boolean {
+  public filter (
+    url: string,
+    body: any,
+    response: AxiosResponse
+  ): boolean {
     return true
   }
 
-  public extract (url: string, body: any, response: AxiosResponse): ProviderRawData {
+  public extract (
+    url: string,
+    body: any,
+    response: AxiosResponse
+  ): ProviderRawData {
     return {
       provider: this.provider,
       status: response.status,
       method: response.request.method,
       url,
       body,
-      headers: response.headers,
+      headers: response.request.headers,
       payload: response.config.data
     }
   }
 
-  public debug (url: string, body: any, response: AxiosResponse): boolean {
+  public debug (
+    url: string,
+    body: any,
+    response: AxiosResponse
+  ): boolean {
     return false
   }
 
-  protected handleResponse (url: string, body: any, response: AxiosResponse): any {
+  protected handleResponse (
+    url: string,
+    body: any,
+    response: AxiosResponse
+  ): any {
     const {
       provider,
       status,
