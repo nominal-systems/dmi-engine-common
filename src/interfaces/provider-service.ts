@@ -4,7 +4,7 @@ import {
   NewIntegrationPayload,
   NullPayloadPayload,
   OrderTestPayload,
-  Test
+  Test, ServiceCodePayload
 } from './payloads.interface'
 import { OrderStatus, ResultStatus } from '../constants'
 import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
@@ -57,6 +57,7 @@ export interface Patient {
 
 export interface Client {
   // TODO(gb): provider client Id?
+  identifier?: Identifier[]
   firstName: string
   lastName: string
   // TODO(gb): add contact
@@ -206,6 +207,7 @@ export type Payload =
   | IdPayload
   | OrderTestPayload
   | NullPayloadPayload
+  | ServiceCodePayload
 
 export interface IMetadata {
   providerConfiguration: ProviderConfiguration
@@ -225,6 +227,7 @@ export interface ProviderService<T extends IMetadata> {
   cancelOrder: (payload: IdPayload, metadata: T) => Promise<void>
   cancelOrderTest: (payload: OrderTestPayload, metadata: T) => Promise<void>
   getServices: (payload: NullPayloadPayload, metadata: T) => Promise<Service[]>
+  getServiceByCode: (payload: ServiceCodePayload, metadata: T) => Promise<Service>
   getDevices: (payload: NullPayloadPayload, metadata: T) => Promise<Device[]>
   getSexes: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Sex>>
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Species>>
