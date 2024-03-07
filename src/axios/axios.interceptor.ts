@@ -1,7 +1,8 @@
-import { HttpService, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { AxiosResponse } from 'axios'
 import { ProviderRawData } from '../interfaces'
 import { ClientProxy } from '@nestjs/microservices'
+import { HttpService } from '@nestjs/axios'
 
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
@@ -12,7 +13,7 @@ export class AxiosInterceptor implements OnModuleInit {
     private readonly httpService: HttpService,
     @Inject('API_SERVICE') readonly client: ClientProxy
   ) {
-    this.logger.setContext(this.constructor.name)
+    this.logger = new Logger(this.constructor.name)
   }
 
   public onModuleInit (): any {

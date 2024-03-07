@@ -67,13 +67,34 @@ export interface IExistingIntegrationJobMetadata<T extends IMetadata> {
 }
 
 export interface ProviderIntegration {
-  createOrder: (msg: ApiEvent, context?: MqttContext) => Promise<OrderCreatedResponse>
-  getBatchOrders?: (msg: ApiEvent, context?: MqttContext) => Promise<Order[]>
-  getBatchResults: (msg: ApiEvent, context?: MqttContext) => Promise<Result[]>
-  getOrder: (msg: ApiEvent, context?: MqttContext) => Promise<Order>
-  getOrderResult: (msg: ApiEvent, context?: MqttContext) => Promise<Result>
-  cancelOrder: (msg: ApiEvent, context?: MqttContext) => Promise<void>
-  cancelOrderTest: (msg: ApiEvent, context?: MqttContext) => Promise<void>
+  createOrder: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<OrderCreatedResponse>
+  getBatchOrders?: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<Order[]>
+  getBatchResults: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<Result[]>
+  getOrder: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<Order>
+  getOrderResult: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<Result>
+  cancelOrder: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<void>
+  cancelOrderTest: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<void>
   getDevices: (
     msg: ApiEvent,
     context?: MqttContext
@@ -96,8 +117,25 @@ export interface ProviderIntegration {
   ) => Promise<ReferenceDataResponse<Breed> | Breed[]>
   fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
   fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
-  handleNewIntegration: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
-  handleIntegrationDelete: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
-  handleIntegrationUpdate: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
-  getManifest?: (msg: ApiEvent, context?: MqttContext) => Promise<any>
+  getManifest?: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<any>
+}
+
+export interface ProviderIntegrationAdmin {
+  handleNewIntegration: (
+    jobData: INewIntegrationJobMetadata<IMetadata>,
+    context: MqttContext
+  ) => any
+
+  handleIntegrationDelete: (
+    jobData: IExistingIntegrationJobMetadata<IMetadata>,
+    context: MqttContext
+  ) => any
+
+  handleIntegrationUpdate: (
+    jobData: IExistingIntegrationJobMetadata<IMetadata>,
+    context: MqttContext
+  ) => any
 }

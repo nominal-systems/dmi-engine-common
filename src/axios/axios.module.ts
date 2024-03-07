@@ -1,7 +1,8 @@
-import { HttpModule, Module } from '@nestjs/common'
+import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ClientsModule, Transport } from '@nestjs/microservices'
 import { AxiosInterceptor } from './axios.interceptor'
+import { HttpModule } from '@nestjs/axios'
 
 @Module({
   imports: [
@@ -21,4 +22,5 @@ import { AxiosInterceptor } from './axios.interceptor'
   providers: [AxiosInterceptor],
   exports: [AxiosInterceptor]
 })
-export class AxiosModule {}
+export class AxiosModule {
+}
