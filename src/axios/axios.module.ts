@@ -6,21 +6,22 @@ import { HttpModule } from '@nestjs/axios'
 
 @Module({
   imports: [
-    HttpModule,
-    ClientsModule.registerAsync([
-      {
-        name: 'API_SERVICE',
-        inject: [ConfigService],
-        useFactory: async (configService: ConfigService) => ({
-          transport: Transport.MQTT,
-          options: {
-            ...configService.get('mqtt')
-          }
-        })
+  HttpModule,
+  ClientsModule.registerAsync([
+    {
+    name: 'API_SERVICE',
+    inject: [ConfigService],
+    useFactory: async (configService: ConfigService) => ({
+      transport: Transport.MQTT,
+      options: {
+      ...configService.get('mqtt')
       }
+      })
+    }
     ])],
   providers: [AxiosInterceptor],
   exports: [AxiosInterceptor]
-})
+  })
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class AxiosModule {
 }
