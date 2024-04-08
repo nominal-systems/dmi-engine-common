@@ -24,6 +24,7 @@ export interface VeterinarianPayload {
   id: string
   lastName: string
   firstName?: string
+  identifier?: Identifier[]
 }
 
 export interface OrderPatient {
@@ -44,6 +45,10 @@ export interface Test {
 
 export interface IdPayload {
   id: string
+}
+
+export interface IdsPayload {
+  ids: string[]
 }
 
 export interface OrderTestPayload {

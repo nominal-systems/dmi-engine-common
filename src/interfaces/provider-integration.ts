@@ -67,10 +67,6 @@ export interface IExistingIntegrationJobMetadata<T extends IMetadata> {
 }
 
 export interface ProviderIntegration {
-  createOrder: (
-    msg: ApiEvent,
-    context?: MqttContext
-  ) => Promise<OrderCreatedResponse>
   getBatchOrders?: (
     msg: ApiEvent,
     context?: MqttContext
@@ -87,14 +83,15 @@ export interface ProviderIntegration {
     msg: ApiEvent,
     context?: MqttContext
   ) => Promise<Result>
-  cancelOrder: (
+  fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
+  fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
+  getManifest?: (
     msg: ApiEvent,
     context?: MqttContext
-  ) => Promise<void>
-  cancelOrderTest: (
-    msg: ApiEvent,
-    context?: MqttContext
-  ) => Promise<void>
+  ) => Promise<any>
+}
+
+export interface ProviderServices {
   getDevices: (
     msg: ApiEvent,
     context?: MqttContext
@@ -103,6 +100,9 @@ export interface ProviderIntegration {
     msg: ApiEvent,
     context?: MqttContext
   ) => Promise<ReferenceDataResponse<Service> | Service[]>
+}
+
+export interface ProviderReferenceData {
   getSexes: (
     msg: ApiEvent,
     context?: MqttContext
@@ -115,12 +115,24 @@ export interface ProviderIntegration {
     msg: ApiEvent,
     context?: MqttContext
   ) => Promise<ReferenceDataResponse<Breed> | Breed[]>
-  fetchResults?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
-  fetchOrders?: (jobData: INewIntegrationJobMetadata<IMetadata>) => any
-  getManifest?: (
+}
+
+export interface ProviderOrderCreation {
+  createOrder: (
     msg: ApiEvent,
     context?: MqttContext
-  ) => Promise<any>
+  ) => Promise<OrderCreatedResponse>
+}
+
+export interface ProviderOrderUpdate {
+  cancelOrder: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<void>
+  cancelOrderTest: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<void>
 }
 
 export interface ProviderIntegrationAdmin {
