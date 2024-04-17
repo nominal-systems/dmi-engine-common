@@ -17,7 +17,7 @@ export class BaseApiService {
       }
     }
   ): Promise<T> {
-    if (process.env.HTTP_DEBUG) {
+    if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
       console.log(`GET ${url}`)
       console.log('-------------------------------------------------------------------------------------------------')
@@ -34,7 +34,7 @@ export class BaseApiService {
       })
     )
 
-    return firstValueFrom(observable)
+    return await firstValueFrom(observable)
   }
 
   async post<T> (
@@ -46,7 +46,7 @@ export class BaseApiService {
       }
     }
   ): Promise<T> {
-    if (process.env.HTTP_DEBUG) {
+    if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
       console.log(`POST ${url}`)
       console.log('-------------------------------------------------------------------------------------------------')
@@ -64,6 +64,6 @@ export class BaseApiService {
       })
     )
 
-    return firstValueFrom(observable)
+    return await firstValueFrom(observable)
   }
 }
