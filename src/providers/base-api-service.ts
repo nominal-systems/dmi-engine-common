@@ -60,7 +60,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to POST ${url}`, status)
+        throw new HttpException(`Failed to POST ${url}`, status, error.response.data)
       })
     )
 
