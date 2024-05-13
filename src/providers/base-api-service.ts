@@ -30,7 +30,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to GET ${url}`, status)
+        throw new HttpException(`Failed to GET ${url}`, status, error.response.data)
       })
     )
 
