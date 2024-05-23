@@ -1,4 +1,4 @@
-import { Order, ReferenceRange } from './provider-service'
+import { Attachment, Order, ReferenceRange } from './provider-service'
 import { TestResultItemInterpretationCode, TestResultItemStatus } from './results.interface'
 
 export interface ProviderResult {
@@ -7,6 +7,7 @@ export interface ProviderResult {
   order?: Order
   status: string
   testResults: ProviderTestResult[]
+  pdfReport?: Attachment[]
 }
 
 export interface ProviderTestResult {

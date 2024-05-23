@@ -117,6 +117,7 @@ export interface Result {
   accession?: string
   status: ResultStatus
   testResults: TestResult[]
+  pdfReport?: Attachment[]
 }
 
 export interface TestResult {
