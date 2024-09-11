@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios'
+import { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class TestUtils {
@@ -11,7 +11,7 @@ export class TestUtils {
       status: status,
       statusText: statusText,
       headers: {},
-      config: {},
+      config: {} as unknown as InternalAxiosRequestConfig,
       data: data
     }
   }
