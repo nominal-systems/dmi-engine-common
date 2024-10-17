@@ -80,6 +80,7 @@ export class AxiosInterceptor implements OnModuleInit {
   ): any {
     const {
       provider,
+      accessionIds,
       status,
       payload,
       headers
@@ -89,6 +90,7 @@ export class AxiosInterceptor implements OnModuleInit {
 
     this.client.emit('raw_data', {
       provider,
+      accessionIds,
       status,
       method,
       url,
