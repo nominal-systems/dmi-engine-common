@@ -1,5 +1,6 @@
 export interface ProviderRawData {
   provider: string
+  accessionIds?: string[]
   status: number
   method: string
   url: string
