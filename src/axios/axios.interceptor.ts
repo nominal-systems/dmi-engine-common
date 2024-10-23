@@ -58,11 +58,20 @@ export class AxiosInterceptor implements OnModuleInit {
       provider: this.provider,
       status: response.status,
       method: response.request.method,
+      accessionIds: this.extractAccessionIds(url, body, response),
       url,
       body,
       headers: response.request.headers,
       payload: response.config.data
     }
+  }
+
+  public extractAccessionIds (
+    url: string,
+    body: any,
+    response: AxiosResponse
+  ): string[] {
+    return []
   }
 
   public debug (
