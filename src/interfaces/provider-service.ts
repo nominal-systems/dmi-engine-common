@@ -4,10 +4,11 @@ import {
   NewIntegrationPayload,
   NullPayloadPayload,
   OrderTestPayload,
-  Test, ServiceCodePayload
+  ServiceCodePayload,
+  Test
 } from './payloads.interface'
 import { OrderStatus, ResultStatus } from '../constants'
-import { BatchResultsResponse, OrderCreatedResponse } from './responses.interface'
+import { BatchResultsResponse, IntegrationTestResponse, OrderCreatedResponse } from './responses.interface'
 import { ReferenceDataResponse } from './reference-data-response'
 import { TestResultItemInterpretationCode } from './results.interface'
 
@@ -220,6 +221,7 @@ export interface IPayload<T extends Payload> {
 }
 
 export interface ProviderService<T extends IMetadata> {
+  testAuth: (payload: NullPayloadPayload, metadata: T) => Promise<IntegrationTestResponse>
   createOrder: (payload: CreateOrderPayload, metadata: T) => Promise<OrderCreatedResponse>
   getBatchOrders: (payload: NullPayloadPayload, metadata: T) => Promise<Order[]>
   getBatchResults: (payload: NullPayloadPayload, metadata: T) => Promise<BatchResultsResponse>

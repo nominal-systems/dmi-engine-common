@@ -15,3 +15,8 @@ export interface BatchResultsResponse {
   results: Result[]
   orders?: Array<Partial<Order>>
 }
+
+export interface IntegrationTestResponse {
+  success: boolean
+  message: string
+}

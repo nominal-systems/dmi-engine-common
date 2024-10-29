@@ -3,7 +3,7 @@ import { ApiEvent } from '../events/api-event'
 import { ExistingIntegrationPayload, NewIntegrationPayload } from './payloads.interface'
 import { Breed, Device, IMetadata, IPayload, Order, Result, Service, Sex, Species } from './provider-service'
 import { ReferenceDataResponse } from './reference-data-response'
-import { OrderCreatedResponse } from './responses.interface'
+import { IntegrationTestResponse, OrderCreatedResponse } from './responses.interface'
 
 export enum ProviderId {
   Demo = 'demo',
@@ -49,7 +49,8 @@ export enum Operation {
   Batch = 'batch',
   Pause = 'pause',
   Submit = 'submit',
-  Manifest = 'manifest'
+  Manifest = 'manifest',
+  Test = 'test',
 }
 
 export interface INewIntegrationJobMetadata<T extends IMetadata> {
@@ -100,4 +101,8 @@ export interface ProviderIntegration {
   handleIntegrationDelete: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
   handleIntegrationUpdate: (jobData: IExistingIntegrationJobMetadata<IMetadata>) => any
   getManifest?: (msg: ApiEvent, context?: MqttContext) => Promise<any>
+  testCredentials: (
+    msg: ApiEvent,
+    context?: MqttContext
+  ) => Promise<IntegrationTestResponse>
 }
