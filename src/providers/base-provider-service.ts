@@ -1,15 +1,31 @@
 import {
-  BatchResultsResponse, Breed,
-  CreateOrderPayload, Device,
+  BatchResultsResponse,
+  Breed,
+  CreateOrderPayload,
+  Device,
   IdPayload,
   IdsPayload,
-  IMetadata, NullPayloadPayload, Order,
+  IMetadata,
+  IntegrationTestResponse,
+  NullPayloadPayload,
+  Order,
   OrderCreatedResponse,
   OrderTestPayload,
-  ProviderService, ReferenceDataResponse, Result, Service, ServiceCodePayload, Sex, Species
+  ProviderService,
+  ReferenceDataResponse,
+  Result,
+  Service,
+  ServiceCodePayload,
+  Sex,
+  Species
 } from '../interfaces'
 
 export abstract class BaseProviderService<T extends IMetadata> implements ProviderService<T> {
+  abstract testAuth (
+    payload: NullPayloadPayload,
+    metadata: any
+  ): Promise<IntegrationTestResponse>
+
   abstract acknowledgeOrder (
     payload: IdPayload,
     metadata: any
