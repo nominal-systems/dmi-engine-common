@@ -44,6 +44,11 @@ export interface Identifier {
   value: string
 }
 
+export interface Contact {
+  phone?: string
+  email?: string
+}
+
 export interface Patient {
   identifier?: Identifier[]
   name: string

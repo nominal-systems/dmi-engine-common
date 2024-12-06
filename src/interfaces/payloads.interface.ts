@@ -1,4 +1,4 @@
-import { Identifier } from './provider-service'
+import { Contact, Identifier } from './provider-service'
 
 export interface CreateOrderPayload {
   requisitionId: string
@@ -18,6 +18,7 @@ export interface ClientPayload {
   lastName: string
   firstName?: string
   identifier?: Identifier[]
+  contact?: Contact
 }
 
 export interface VeterinarianPayload {
