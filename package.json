@@ -15,12 +15,16 @@
     "prebuild": "rimraf lib",
     "build": "tsc",
     "dev": "tsc-watch --onSuccess \"yalc publish --no-scripts --push\"",
-    "lint": "eslint \"src/**/*.ts\" --fix"
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "Miguel Araujo",
   "license": "ISC",
   "devDependencies": {
+    "@types/jest": "^29.5.11",
     "@types/node": "^20.3.1",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
@@ -29,6 +33,9 @@
     "eslint-plugin-import": "^2.23.3",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
     "tsc-watch": "^6.0.4",
     "typescript": "^4.3.2",
     "yalc": "^1.0.0-pre.53"
@@ -47,5 +54,22 @@
     "mqtt": "^4.3.7",
     "rimraf": "^3.0.2",
     "rxjs": "^7.8.1"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   }
 }

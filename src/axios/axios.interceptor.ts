@@ -20,7 +20,7 @@ export class AxiosInterceptor implements OnModuleInit {
     const axios = this.httpService.axiosRef
     axios.interceptors.response.use(
       (response) => {
-        const url: string = response.config.url as string
+        const url: string = this.withParams(response.config)
         const body = response.data
         if (this.debug(url, body, response)) {
           const method: string = response.request.method
@@ -32,8 +32,7 @@ export class AxiosInterceptor implements OnModuleInit {
         return response
       },
       async (err) => {
-        this.logger.error(err)
-        const url: string = err.config.url as string
+        const url: string = this.withParams(err?.config ?? err?.response?.config)
         const body = err.response.data
 
         this.handleResponse(url, body, err.response)
@@ -107,5 +106,48 @@ export class AxiosInterceptor implements OnModuleInit {
       headers,
       payload
     })
+  }
+
+  // Build a URL that includes serialized query params from axios config
+  protected withParams (config?: { url?: string, params?: any } | null): string {
+    const baseUrl = (config?.url ?? '')
+    const params = config?.params
+    if (params == null) return baseUrl
+
+    // URLSearchParams handling
+    if (typeof URLSearchParams !== 'undefined' && params instanceof URLSearchParams) {
+      const qs = params.toString()
+      if (qs.length === 0) return baseUrl
+      const joiner = baseUrl.includes('?') ? '&' : '?'
+      return `${baseUrl}${joiner}${qs}`
+    }
+
+    if (typeof params !== 'object') return baseUrl
+
+    const keys = Object.keys(params)
+    if (keys.length === 0) return baseUrl
+
+    const search = keys
+      .map((key) => {
+        const value = params[key]
+        if (value === undefined || value === null) return null
+        if (Array.isArray(value)) {
+          const parts = value
+            .filter(v => v !== undefined && v !== null)
+            .map(v => `${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`)
+            .join('&')
+          return parts.length > 0 ? parts : null
+        }
+        // Skip empty-string values to avoid meaningless query pairs
+        if (value === '') return null
+        return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+      })
+      .filter(Boolean)
+      .join('&')
+
+    if (search.length === 0) return baseUrl
+
+    const joiner = baseUrl.includes('?') ? '&' : '?'
+    return `${baseUrl}${joiner}${search}`
   }
 }
