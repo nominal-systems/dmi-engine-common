@@ -20,7 +20,7 @@ export class AxiosInterceptor implements OnModuleInit {
     const axios = this.httpService.axiosRef
     axios.interceptors.response.use(
       (response) => {
-        const url: string = this.withParams(response.config)
+        const url: string = decodeURIComponent(this.withParams(response.config))
         const body = response.data
         if (this.debug(url, body, response)) {
           const method: string = response.request.method
