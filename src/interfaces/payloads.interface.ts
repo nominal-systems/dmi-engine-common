@@ -37,6 +37,10 @@ export interface OrderPatient {
   birthdate?: string
   weightMeasurement?: number
   weightUnits?: string
+  weight?: {
+    measurement: number
+    units: string
+  }
   identifier?: Identifier[]
 }
 
