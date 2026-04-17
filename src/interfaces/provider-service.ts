@@ -243,10 +243,10 @@ export interface ProviderService<T extends IMetadata> {
   getSpecies: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Species>>
   getBreeds: (payload: NullPayloadPayload, metadata: T) => Promise<ReferenceDataResponse<Breed>>
   createRequisitionId: (payload: NullPayloadPayload, metadata: T) => string
-  acknowledgeOrder: (payload: IdPayload, metadata: T) => Promise<void>
-  acknowledgeOrders: (payload: IdsPayload, metadata: T) => Promise<void>
-  acknowledgeResult: (payload: IdPayload, metadata: T) => Promise<void>
-  acknowledgeResults: (payload: IdsPayload, metadata: T) => Promise<void>
+  acknowledgeOrder?: (payload: IdPayload, metadata: T) => Promise<void>
+  acknowledgeOrders?: (payload: IdsPayload, metadata: T) => Promise<void>
+  acknowledgeResult?: (payload: IdPayload, metadata: T) => Promise<void>
+  acknowledgeResults?: (payload: IdsPayload, metadata: T) => Promise<void>
 }
 
 export interface PdfResults<T extends IMetadata> {

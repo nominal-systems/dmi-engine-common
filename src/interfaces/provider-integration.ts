@@ -139,17 +139,17 @@ export interface ProviderOrderUpdate {
 export interface ProviderIntegrationAdmin {
   handleNewIntegration: (
     jobData: INewIntegrationJobMetadata<IMetadata>,
-    context: MqttContext
+    context?: MqttContext
   ) => any
 
   handleIntegrationDelete: (
     jobData: IExistingIntegrationJobMetadata<IMetadata>,
-    context: MqttContext
+    context?: MqttContext
   ) => any
 
   handleIntegrationUpdate: (
     jobData: IExistingIntegrationJobMetadata<IMetadata>,
-    context: MqttContext
+    context?: MqttContext
   ) => any
 }
 
@@ -159,3 +159,15 @@ export interface ProviderApi {
     context?: MqttContext
   ) => Promise<IntegrationTestResponse>
 }
+
+/**
+ * @deprecated Combine the individual interfaces directly. Kept for v0 → v1 migration.
+ */
+export type ProviderIntegrationV0 =
+  ProviderIntegration &
+  ProviderServices &
+  ProviderReferenceData &
+  ProviderOrderCreation &
+  ProviderOrderUpdate &
+  ProviderIntegrationAdmin &
+  ProviderApi
