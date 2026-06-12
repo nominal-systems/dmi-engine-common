@@ -1,4 +1,5 @@
 import { AxiosInterceptor } from './axios.interceptor'
+import { runWithRequestContext } from '../context'
 
 describe('AxiosInterceptor', () => {
   let interceptor: AxiosInterceptor
@@ -167,6 +168,79 @@ describe('AxiosInterceptor', () => {
     const returned = (successHandler as any)(response)
     expect(returned).toBe(response)
     expect(clientMock.emit).not.toHaveBeenCalled()
+  })
+
+  it('emits raw_data with the integrationId from the request context', () => {
+    interceptor.onModuleInit()
+
+    const response = {
+      config: {
+        url: 'https://api.example.com/resource',
+        data: null
+      },
+      data: { ok: true },
+      status: 200,
+      request: {
+        method: 'GET',
+        headers: {}
+      }
+    }
+
+    runWithRequestContext({ integrationId: 'integration-1' }, () => {
+      (successHandler as any)(response)
+    })
+
+    expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({
+      integrationId: 'integration-1'
+    }))
+  })
+
+  it('prefers the explicit per-request integrationId over the request context', () => {
+    interceptor.onModuleInit()
+
+    const response = {
+      config: {
+        url: 'https://api.example.com/resource',
+        data: null,
+        metadata: { integrationId: 'explicit-integration' }
+      },
+      data: { ok: true },
+      status: 200,
+      request: {
+        method: 'GET',
+        headers: {}
+      }
+    }
+
+    runWithRequestContext({ integrationId: 'context-integration' }, () => {
+      (successHandler as any)(response)
+    })
+
+    expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({
+      integrationId: 'explicit-integration'
+    }))
+  })
+
+  it('emits raw_data without integrationId when no context is available', () => {
+    interceptor.onModuleInit()
+
+    const response = {
+      config: {
+        url: 'https://api.example.com/resource',
+        data: null
+      },
+      data: { ok: true },
+      status: 200,
+      request: {
+        method: 'GET',
+        headers: {}
+      }
+    };
+
+    (successHandler as any)(response)
+
+    const emitted = clientMock.emit.mock.calls[0][1]
+    expect(emitted.integrationId).toBeUndefined()
   })
 
   it('emits raw_data on error responses and rethrows the error', async () => {

@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.3.0
+
+Adds integration context propagation so `raw_data` events (persisted as
+`external_requests` by dmi-api) can be traced back to the integration that
+originated each HTTP request. See
+[dmi-api#302](https://github.com/nominal-systems/dmi-api/issues/302).
+
+### Added
+
+- `RequestContext` AsyncLocalStorage-based request context:
+  `runWithRequestContext(context, fn)` and `getRequestContext()`.
+- `IntegrationContextInterceptor`: NestJS interceptor that extracts
+  `integrationId` from incoming MQTT messages (`data.integrationId` or
+  `data.payload.integrationId`) and runs the handler inside the request
+  context. Register it as an `APP_INTERCEPTOR` in provider modules.
+- `ProviderRawData.integrationId` and `IMetadata.integrationId` (both
+  optional).
+- `AxiosInterceptor` now emits `integrationId` in `raw_data` events, resolved
+  from the per-request axios config (`config.metadata.integrationId`,
+  explicit override) or the ambient request context (set at the MQTT handler
+  or Bull processor entry point via `IntegrationContextInterceptor` /
+  `runWithRequestContext()`).
+
+All new fields are optional: consumers on 1.2.0 behavior are unaffected.
+
 ## 1.2.0
 
 Convergence release. Lands the accumulated 1.x work on a single line that all

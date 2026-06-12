@@ -3,6 +3,7 @@ import { AxiosResponse } from 'axios'
 import { ProviderRawData } from '../interfaces'
 import { ClientProxy } from '@nestjs/microservices'
 import { HttpService } from '@nestjs/axios'
+import { getRequestContext } from '../context'
 
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
@@ -58,6 +59,7 @@ export class AxiosInterceptor implements OnModuleInit {
       status: response.status,
       method: response.request.method,
       accessionIds: this.extractAccessionIds(url, body, response),
+      integrationId: (response.config as any)?.metadata?.integrationId ?? getRequestContext()?.integrationId,
       url,
       body,
       headers: response.request.headers,
@@ -89,6 +91,7 @@ export class AxiosInterceptor implements OnModuleInit {
     const {
       provider,
       accessionIds,
+      integrationId,
       status,
       payload,
       headers
@@ -99,6 +102,7 @@ export class AxiosInterceptor implements OnModuleInit {
     this.client.emit('raw_data', {
       provider,
       accessionIds,
+      integrationId,
       status,
       method,
       url,

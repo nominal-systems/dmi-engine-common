@@ -219,6 +219,7 @@ export type Payload =
   | ServiceCodePayload
 
 export interface IMetadata {
+  integrationId?: string
   providerConfiguration: ProviderConfiguration
   integrationOptions: IntegrationOptions
 }
