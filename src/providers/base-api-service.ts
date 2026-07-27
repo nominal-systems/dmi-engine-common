@@ -14,6 +14,25 @@ function isRetryableError (error: any): boolean {
   )
 }
 
+function getRetryAfterDelayMs (error: any): number | undefined {
+  const retryAfter = error.response?.headers?.['retry-after']
+  if (typeof retryAfter !== 'string' || retryAfter.trim() === '') {
+    return undefined
+  }
+
+  const seconds = Number(retryAfter)
+  if (!Number.isNaN(seconds)) {
+    return Math.max(0, seconds * 1000)
+  }
+
+  const dateMs = Date.parse(retryAfter)
+  if (!Number.isNaN(dateMs)) {
+    return Math.max(0, dateMs - Date.now())
+  }
+
+  return undefined
+}
+
 function retryRequest<T> (config?: RetryConfig): MonoTypeOperatorFunction<T> {
   const { count = 1, delay = 100 } = config ?? {}
   return retry({
@@ -23,7 +42,7 @@ function retryRequest<T> (config?: RetryConfig): MonoTypeOperatorFunction<T> {
         throw error
       }
 
-      return timer(delay)
+      return timer(getRetryAfterDelayMs(error) ?? delay)
     }
   })
 }

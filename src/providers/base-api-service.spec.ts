@@ -3,23 +3,23 @@ import { HttpService } from '@nestjs/axios'
 import { HttpException } from '@nestjs/common'
 import { BaseApiService } from './base-api-service'
 
-function createResponse (status: number, data?: any): AxiosResponse {
+function createResponse (status: number, data?: any, headers: Record<string, string> = {}): AxiosResponse {
   return {
     status,
     statusText: '',
     data,
-    headers: {},
+    headers,
     config: {} as any
   }
 }
 
-function createResponseError (status: number): AxiosError {
+function createResponseError (status: number, headers?: Record<string, string>): AxiosError {
   return new AxiosError(
     'HTTP test error',
     String(status),
     undefined,
     {},
-    createResponse(status))
+    createResponse(status, undefined, headers))
 }
 
 function setup (): { service: BaseApiService, adapter: jest.Mock } {
@@ -175,6 +175,52 @@ describe('BaseApiService', () => {
         status: 500,
         message: 'Failed to GET /test'
       })
+    })
+  })
+
+  describe('Retry-After header', () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
+    it('uses the Retry-After delay (seconds form) when it is present', async () => {
+      const { service, adapter } = setup()
+      adapter
+        .mockRejectedValueOnce(createResponseError(429, { 'retry-after': '2' })) // 2000ms
+        .mockResolvedValueOnce(createResponse(200, { test: 'data' }))
+
+      // Configured delay (60s) is far longer than the header (2s). Advancing by
+      // only the header's delay should already be enough to resolve — proving
+      // the header won, not the configured delay.
+      const promise = service.get('', { retry: { delay: 60000, count: 1 } })
+
+      await jest.advanceTimersByTimeAsync(2000)
+      await expect(promise).resolves.toEqual({ test: 'data' })
+    })
+
+    it('uses the Retry-After delay (HTTP-date form) when it is present', async () => {
+      const { service, adapter } = setup()
+      const retryAt = new Date(Date.now() + 2000)
+      adapter
+        .mockRejectedValueOnce(createResponseError(429, { 'retry-after': retryAt.toUTCString() }))
+        .mockResolvedValueOnce(createResponse(200, { test: 'data' }))
+
+      const promise = service.get('', { retry: { delay: 60000, count: 1 } })
+
+      await jest.advanceTimersByTimeAsync(2000)
+      await expect(promise).resolves.toEqual({ test: 'data' })
+    })
+
+    it('does not retry a Retry-After delay on a non-retryable status', async () => {
+      const { service, adapter } = setup()
+      adapter.mockRejectedValue(createResponseError(404, { 'retry-after': '2' }))
+
+      await expect(service.get('', { retry: { delay: 60000, count: 1 } })).rejects.toThrow(HttpException)
+      expect(adapter).toHaveBeenCalledTimes(1)
     })
   })
 })
