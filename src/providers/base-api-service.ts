@@ -60,6 +60,12 @@ export class BaseApiService {
   constructor (private readonly http: HttpService) {
   }
 
+  /**
+   * Retries by default (1 retry, 100ms delay) on 5xx, 429, and network errors,
+   * honoring a `Retry-After` response header over the configured delay when
+   * present. Pass `retry: false` to disable, or `retry: { count, delay }` to
+   * override the defaults.
+   */
   async get<T> (
     url: string,
     config: RequestConfig = {
@@ -89,6 +95,12 @@ export class BaseApiService {
     return await firstValueFrom(observable)
   }
 
+  /**
+   * Does not retry by default, since POST bodies are not generally safe to
+   * resend automatically. Pass `retry: true` (or `retry: { count, delay }`)
+   * to opt in — retries then behave the same as `get`: 5xx, 429, and network
+   * errors are retried, honoring a `Retry-After` response header when present.
+   */
   async post<T> (
     url: string,
     data: any,
