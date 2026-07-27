@@ -14,6 +14,10 @@ function isRetryableError (error: any): boolean {
   )
 }
 
+// Upper bound on a Retry-After-derived delay, so a huge or malicious value
+// from an upstream we don't control can't stall a request indefinitely.
+const MAX_RETRY_AFTER_DELAY_MS = 60_000
+
 function getRetryAfterDelayMs (error: any): number | undefined {
   const retryAfter = error.response?.headers?.['retry-after']
   if (typeof retryAfter !== 'string' || retryAfter.trim() === '') {
@@ -21,13 +25,13 @@ function getRetryAfterDelayMs (error: any): number | undefined {
   }
 
   const seconds = Number(retryAfter)
-  if (!Number.isNaN(seconds)) {
-    return Math.max(0, seconds * 1000)
+  if (Number.isFinite(seconds)) {
+    return Math.min(Math.max(0, seconds * 1000), MAX_RETRY_AFTER_DELAY_MS)
   }
 
   const dateMs = Date.parse(retryAfter)
   if (!Number.isNaN(dateMs)) {
-    return Math.max(0, dateMs - Date.now())
+    return Math.min(Math.max(0, dateMs - Date.now()), MAX_RETRY_AFTER_DELAY_MS)
   }
 
   return undefined
