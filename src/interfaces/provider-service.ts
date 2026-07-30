@@ -155,6 +155,12 @@ export interface TestResultItem {
     value: number
     units: string
   }
+  /**
+   * Unit of the result value, at the observation level. Populated whenever the
+   * provider reports a unit, regardless of whether the value is numeric
+   * (`valueQuantity`) or textual (`valueString`). For numeric results this
+   * duplicates `valueQuantity.units`; consumers should read `units` here.
+   */
   units?: string
   interpretation?: {
     code: TestResultItemInterpretationCode
