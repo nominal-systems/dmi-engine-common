@@ -29,6 +29,7 @@ export interface ProviderTestResultItem {
     value: number
     units: string
   }
+  units?: string
   interpretation?: {
     code: TestResultItemInterpretationCode
     text: string

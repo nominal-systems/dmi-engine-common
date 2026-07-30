@@ -155,6 +155,7 @@ export interface TestResultItem {
     value: number
     units: string
   }
+  units?: string
   interpretation?: {
     code: TestResultItemInterpretationCode
     text: string
