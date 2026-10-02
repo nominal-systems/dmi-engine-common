@@ -1,3 +1,4 @@
+import { AxiosHeaders } from 'axios'
 import { redactHeaders, redactObject, redactUrl, SENSITIVE_PARAM_NAMES } from './redact'
 
 describe('redact', () => {
@@ -55,6 +56,11 @@ describe('redact', () => {
       expect(redactUrl('not a url?token=abc&%E0%A4%A=1')).toBe('not a url?token=***&%E0%A4%A=1')
       expect(redactUrl('?%=x&token')).toBe('?%=x&token')
     })
+
+    it('masks extra parameter names in any case or encoding, by exact name only', () => {
+      expect(redactUrl('https://api.example.com/x?SessionId=S3&session%49d=s-2&sessionIdHint=1&x=1', ['sessionId']))
+        .toBe('https://api.example.com/x?SessionId=***&session%49d=***&sessionIdHint=1&x=1')
+    })
   })
 
   describe('redactHeaders', () => {
@@ -96,6 +102,19 @@ describe('redact', () => {
     it.each([[undefined], [null], ['Authorization: Bearer abc'], [42]])('returns %p as is', (value) => {
       expect(redactHeaders(value)).toBe(value)
     })
+
+    it('masks extra header names, by exact name only', () => {
+      expect(redactHeaders({ 'X-Clinic-Key': 'k-1', 'x-clinic-keyring': 'r', accept: 'application/json' }, ['x-clinic-key']))
+        .toEqual({ 'X-Clinic-Key': '***', 'x-clinic-keyring': 'r', accept: 'application/json' })
+    })
+
+    it('copies AxiosHeaders through toJSON(), so false and null values stay out as they do when serialised', () => {
+      const headers = new AxiosHeaders({ Authorization: 'Bearer abc', 'X-Flag': false, 'X-Empty': null, Accept: 'application/json' })
+      const redacted = redactHeaders(headers)
+      expect(redacted).toEqual({ Authorization: '***', Accept: 'application/json' })
+      expect(JSON.stringify(redacted)).toBe(JSON.stringify({ ...JSON.parse(JSON.stringify(headers)), Authorization: '***' }))
+      expect(headers.get('Authorization')).toBe('Bearer abc')
+    })
   })
 
   describe('redactObject', () => {
@@ -117,6 +136,11 @@ describe('redact', () => {
 
     it('masks the whole value of a credential key, objects included', () => {
       expect(redactObject({ token: { value: 'abc', expires: 1 } })).toEqual({ token: '***' })
+    })
+
+    it('masks extra key names at any depth, by exact name only', () => {
+      expect(redactObject({ ClinicPin: '1', nested: [{ clinicpin: '2', clinicPinHint: 'h' }] }, ['clinicPin']))
+        .toEqual({ ClinicPin: '***', nested: [{ clinicpin: '***', clinicPinHint: 'h' }] })
     })
 
     it('keeps keys that merely start like a credential name', () => {

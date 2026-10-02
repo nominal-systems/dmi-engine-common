@@ -430,26 +430,97 @@ describe('AxiosInterceptor', () => {
       }))
     })
 
-    it('lets a subclass extend redactUrl with its own parameter names', () => {
-      class SessionInterceptor extends AxiosInterceptor {
-        protected redactUrl (url: string): string {
-          return super.redactUrl(url).replace(/([?&]sessionId=)[^&#]*/g, '$1***')
+    it('masks the names a subclass adds through extraSensitiveNames, in any case or encoding', () => {
+      class ClinicInterceptor extends AxiosInterceptor {
+        protected extraSensitiveNames (): readonly string[] {
+          return ['sessionId', 'X-Clinic-Key']
         }
       }
-      interceptor = new SessionInterceptor(httpServiceMock, clientMock)
+      interceptor = new ClinicInterceptor(httpServiceMock, clientMock)
       interceptor.onModuleInit()
       const filter = jest.spyOn(interceptor, 'filter')
       const response = successResponse({
-        url: 'https://api.example.com/x',
-        params: { sessionId: 's-1', token: TOKEN, page: 2 }
-      })
+        url: 'https://api.example.com/x?session%49d=s-2',
+        params: { SessionId: 'S3', page: 2 }
+      }, { 'x-clinic-key': 'k-1', accept: 'application/json' })
 
       ;(successHandler as any)(response)
 
-      expect(filter).toHaveBeenCalledWith('https://api.example.com/x?sessionId=***&token=***&page=2', response.data, response)
+      const expectedUrl = 'https://api.example.com/x?sessionId=***&SessionId=***&page=2'
+      expect(filter).toHaveBeenCalledWith(expectedUrl, response.data, response)
       expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({
-        url: 'https://api.example.com/x?sessionId=***&token=***&page=2'
+        url: expectedUrl,
+        headers: { 'x-clinic-key': '***', accept: 'application/json' }
       }))
+      const emitted = JSON.stringify(clientMock.emit.mock.calls)
+      expect(emitted).not.toContain('S3')
+      expect(emitted).not.toContain('s-2')
+      expect(emitted).not.toContain('k-1')
+    })
+
+    it('masks the url for a subclass that registers its own interceptors and decodes withParams()', async () => {
+      const LEAKY_TOKEN = 'dummy&tail=leaked#rest'
+      // The shape of an integration that replaces onModuleInit(): it logs and
+      // emits decodeURIComponent(this.withParams(...)) itself.
+      class OwnHandlersInterceptor extends AxiosInterceptor {
+        readonly lines: string[] = []
+
+        constructor (private readonly http: any, client: any) {
+          super(http, client)
+        }
+
+        public onModuleInit (): void {
+          this.http.axiosRef.interceptors.response.use(
+            (res: any) => {
+              const url = decodeURIComponent(this.withParams(res.config))
+              this.lines.push(`${String(res.request.method)} ${url} -> ${String(res.status)}`)
+              this.handleResponse(url, res.data, res)
+              return res
+            },
+            async (error: any) => {
+              const url = this.withParams(error.config ?? error.response.config)
+              this.lines.push(`failed ${url}`)
+              this.handleResponse(url, error.response.data, error.response)
+              return await Promise.reject(error)
+            }
+          )
+        }
+      }
+      const own = new OwnHandlersInterceptor(httpServiceMock, clientMock)
+      own.onModuleInit()
+      spyOnLogger()
+
+      ;(successHandler as any)(successResponse({
+        url: 'https://api.example.com/Tests/v6',
+        params: { accesstoken: LEAKY_TOKEN, x: '1' }
+      }))
+      const error = {
+        config: { url: 'https://api.example.com/Tests/v6', params: { accesstoken: LEAKY_TOKEN } },
+        response: { data: {}, status: 401, config: {}, request: { method: 'GET' } }
+      }
+      await expect((errorHandler as any)(error)).rejects.toBe(error)
+
+      expect(own.lines).toEqual([
+        'GET https://api.example.com/Tests/v6?accesstoken=***&x=1 -> 200',
+        'failed https://api.example.com/Tests/v6?accesstoken=***'
+      ])
+      expect(clientMock.emit.mock.calls.map((call: any[]) => call[1].url)).toEqual([
+        'https://api.example.com/Tests/v6?accesstoken=***&x=1',
+        'https://api.example.com/Tests/v6?accesstoken=***'
+      ])
+      expect(JSON.stringify(clientMock.emit.mock.calls)).not.toContain('leaked')
+    })
+
+    it('emits headers as undefined when the request carries none, as Node requests do', () => {
+      interceptor.onModuleInit()
+      const response = successResponse({ url: 'https://api.example.com/x', params: { token: TOKEN } })
+      delete response.request.headers
+
+      ;(successHandler as any)(response)
+
+      const emitted = clientMock.emit.mock.calls[0][1]
+      expect(emitted.url).toBe('https://api.example.com/x?token=***')
+      expect(emitted).toHaveProperty('headers', undefined)
     })
   })
 })
