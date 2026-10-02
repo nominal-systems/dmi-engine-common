@@ -223,4 +223,115 @@ describe('BaseApiService', () => {
       expect(adapter).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('HTTP_DEBUG dump', () => {
+    const originalHttpDebug = process.env.HTTP_DEBUG
+    let log: jest.SpyInstance
+
+    beforeEach(() => {
+      process.env.HTTP_DEBUG = 'true'
+      log = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+    })
+
+    afterEach(() => {
+      log.mockRestore()
+      if (originalHttpDebug === undefined) {
+        delete process.env.HTTP_DEBUG
+      } else {
+        process.env.HTTP_DEBUG = originalHttpDebug
+      }
+    })
+
+    function printed (): string {
+      return log.mock.calls.map((args) => args.join(' ')).join('\n')
+    }
+
+    it('masks the password in a POST body and the token in its headers', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.post('/Users/v6/Login', { UserName: 'u', Password: 'p' }, {
+        headers: { 'Content-Type': 'application/json', accessToken: 'abc' }
+      })
+
+      const output = printed()
+      expect(output).toContain('"UserName": "u"')
+      expect(output).toContain('"Password": "***"')
+      expect(output).toContain('"accessToken": "***"')
+      expect(output).toContain('"Content-Type": "application/json"')
+      expect(output).not.toContain('"p"')
+      expect(output).not.toContain('abc')
+    })
+
+    it('masks the token in GET headers and a credential query parameter in the url', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.get('/LabOrders?accessToken=abc&id=1', {
+        headers: { Authorization: 'Bearer abc', Accept: 'application/json' }
+      })
+
+      const output = printed()
+      expect(output).toContain('GET /LabOrders?accessToken=***&id=1')
+      expect(output).toContain('"Authorization": "***"')
+      expect(output).toContain('"Accept": "application/json"')
+      expect(output).not.toContain('abc')
+    })
+
+    it('does not mutate the body or headers it is given', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+      const body = { UserName: 'u', Password: 'p' }
+      const headers = { accessToken: 'abc' }
+
+      await service.post('/login', body, { headers })
+
+      expect(body).toEqual({ UserName: 'u', Password: 'p' })
+      expect(headers).toEqual({ accessToken: 'abc' })
+      expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual({ UserName: 'u', Password: 'p' })
+      expect(adapter.mock.calls[0][0].headers.accessToken).toBe('abc')
+    })
+
+    it('masks a credential query parameter in the POST url', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.post('/orders?apikey=abc&id=1', {}, {})
+
+      const output = printed()
+      expect(output).toContain('POST /orders?apikey=***&id=1')
+      expect(output).not.toContain('abc')
+    })
+
+    it('prints headers= undefined for a request without headers, as before', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.get('/status', {})
+
+      expect(printed()).toContain('headers= undefined')
+    })
+
+    it('masks the names a subclass adds through extraSensitiveNames in headers and body', async () => {
+      class ClinicApiService extends BaseApiService {
+        protected extraSensitiveNames (): readonly string[] {
+          return ['X-Clinic-Key', 'clinicPin']
+        }
+      }
+      const adapter = jest.fn().mockResolvedValue(createResponse(200, { ok: true }))
+      const service = new ClinicApiService(new HttpService(axios.create({ adapter })))
+
+      await service.post('/orders', { ClinicPin: '1234', clinicId: 'c-1' }, {
+        headers: { 'x-clinic-key': 'k-1', Accept: 'application/json' }
+      })
+
+      const output = printed()
+      expect(output).toContain('"ClinicPin": "***"')
+      expect(output).toContain('"clinicId": "c-1"')
+      expect(output).toContain('"x-clinic-key": "***"')
+      expect(output).toContain('"Accept": "application/json"')
+      expect(output).not.toContain('1234')
+      expect(output).not.toContain('k-1')
+    })
+  })
 })
