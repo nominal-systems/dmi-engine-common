@@ -291,5 +291,47 @@ describe('BaseApiService', () => {
       expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual({ UserName: 'u', Password: 'p' })
       expect(adapter.mock.calls[0][0].headers.accessToken).toBe('abc')
     })
+
+    it('masks a credential query parameter in the POST url', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.post('/orders?apikey=abc&id=1', {}, {})
+
+      const output = printed()
+      expect(output).toContain('POST /orders?apikey=***&id=1')
+      expect(output).not.toContain('abc')
+    })
+
+    it('prints headers= undefined for a request without headers, as before', async () => {
+      const { service, adapter } = setup()
+      adapter.mockResolvedValue(createResponse(200, { ok: true }))
+
+      await service.get('/status', {})
+
+      expect(printed()).toContain('headers= undefined')
+    })
+
+    it('masks the names a subclass adds through extraSensitiveNames in headers and body', async () => {
+      class ClinicApiService extends BaseApiService {
+        protected extraSensitiveNames (): readonly string[] {
+          return ['X-Clinic-Key', 'clinicPin']
+        }
+      }
+      const adapter = jest.fn().mockResolvedValue(createResponse(200, { ok: true }))
+      const service = new ClinicApiService(new HttpService(axios.create({ adapter })))
+
+      await service.post('/orders', { ClinicPin: '1234', clinicId: 'c-1' }, {
+        headers: { 'x-clinic-key': 'k-1', Accept: 'application/json' }
+      })
+
+      const output = printed()
+      expect(output).toContain('"ClinicPin": "***"')
+      expect(output).toContain('"clinicId": "c-1"')
+      expect(output).toContain('"x-clinic-key": "***"')
+      expect(output).toContain('"Accept": "application/json"')
+      expect(output).not.toContain('1234')
+      expect(output).not.toContain('k-1')
+    })
   })
 })

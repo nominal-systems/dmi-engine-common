@@ -2,6 +2,9 @@
 // calls: request URLs, request headers and request bodies. A redacted value is
 // the literal string `***`, names are matched case-insensitively, and the input
 // is never mutated: every function returns a copy (or its input, unchanged).
+// Each function takes optional `extraNames`, provider-specific names that are
+// sensitive as well; each one matches a parameter, header or key name exactly
+// (ignoring case), never as a substring.
 
 const REDACTED = '***'
 
@@ -30,23 +33,34 @@ const SENSITIVE_KEY_NAMES = ['pass', 'pwd']
 // Headers that carry credentials without a telling name.
 const SENSITIVE_HEADER_NAMES = ['cookie', 'set-cookie']
 
-function isSensitiveKey (name: string): boolean {
+function lowerCased (names: readonly string[]): string[] {
+  return names.map((name) => name.toLowerCase())
+}
+
+function isSensitiveKey (name: string, extra: string[]): boolean {
   const lower = name.toLowerCase()
-  return SENSITIVE_KEY_NAMES.includes(lower) || SENSITIVE_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment))
+  return SENSITIVE_KEY_NAMES.includes(lower) ||
+    extra.includes(lower) ||
+    SENSITIVE_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment))
 }
 
-function isSensitiveHeader (name: string): boolean {
-  return SENSITIVE_HEADER_NAMES.includes(name.toLowerCase()) || isSensitiveKey(name)
+function isSensitiveHeader (name: string, extra: string[]): boolean {
+  return SENSITIVE_HEADER_NAMES.includes(name.toLowerCase()) || isSensitiveKey(name, extra)
 }
 
-function isSensitiveParam (name: string): boolean {
+function isSensitiveParam (name: string, extra: string[]): boolean {
   let decoded = name
   try {
     decoded = decodeURIComponent(name)
   } catch {
     // Not valid percent-encoding: match the name as written.
   }
-  return SENSITIVE_PARAM_NAMES.includes(decoded.toLowerCase())
+  const lower = decoded.toLowerCase()
+  return SENSITIVE_PARAM_NAMES.includes(lower) || extra.includes(lower)
+}
+
+function isObjectLike (value: any): boolean {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function isPlainObject (value: any): boolean {
@@ -57,7 +71,8 @@ function isPlainObject (value: any): boolean {
 
 /**
  * Replace the value of every query parameter named in `SENSITIVE_PARAM_NAMES`
- * with `***`. Everything else (parameter order, encoding, fragment) is kept
+ * or `extraNames` with `***`. Parameter names are percent-decoded before they
+ * are compared. Everything else (parameter order, encoding, fragment) is kept
  * byte for byte, and a URL without such a parameter is returned unchanged.
  * Never throws: the query string is split by hand rather than parsed with
  * `new URL()`.
@@ -66,8 +81,9 @@ function isPlainObject (value: any): boolean {
  * you can: once decoded, a value containing `&` or `#` can no longer be told
  * apart from the next parameter or the fragment.
  */
-export function redactUrl (url: string): string {
+export function redactUrl (url: string, extraNames: readonly string[] = []): string {
   if (typeof url !== 'string') return url
+  const extra = lowerCased(extraNames)
 
   const queryStart = url.indexOf('?')
   if (queryStart === -1) return url
@@ -81,7 +97,7 @@ export function redactUrl (url: string): string {
     .map((pair) => {
       const separator = pair.indexOf('=')
       if (separator === -1) return pair
-      return isSensitiveParam(pair.slice(0, separator)) ? `${pair.slice(0, separator)}=${REDACTED}` : pair
+      return isSensitiveParam(pair.slice(0, separator), extra) ? `${pair.slice(0, separator)}=${REDACTED}` : pair
     })
     .join('&')
 
@@ -91,16 +107,21 @@ export function redactUrl (url: string): string {
 /**
  * A shallow copy of `headers` with the value of every credential-bearing
  * header replaced by `***`: `authorization`, `proxy-authorization`, `cookie`,
- * `set-cookie`, `x-api-key`, and any header whose name contains `token`,
- * `secret`, `password` or `apikey`/`api_key`/`api-key`. Anything that is not
- * an object is returned as is.
+ * `set-cookie`, `x-api-key`, any header whose name contains `token`,
+ * `secret`, `password` or `apikey`/`api_key`/`api-key`, and any header named
+ * in `extraNames`. Anything that is not an object is returned as is. An
+ * object with a `toJSON()` (axios' `AxiosHeaders`) is copied from what that
+ * returns, so the result serialises like the input did.
  */
-export function redactHeaders (headers: any): any {
-  if (headers === null || typeof headers !== 'object' || Array.isArray(headers)) return headers
+export function redactHeaders (headers: any, extraNames: readonly string[] = []): any {
+  if (!isObjectLike(headers)) return headers
+  const source = typeof headers.toJSON === 'function' ? headers.toJSON() : headers
+  if (!isObjectLike(source)) return source
 
-  const copy = { ...headers }
+  const extra = lowerCased(extraNames)
+  const copy = { ...source }
   for (const name of Object.keys(copy)) {
-    if (isSensitiveHeader(name)) {
+    if (isSensitiveHeader(name, extra)) {
       copy[name] = REDACTED
     }
   }
@@ -110,16 +131,17 @@ export function redactHeaders (headers: any): any {
 /**
  * A deep copy of `value` in which every key whose name contains `password`,
  * `token`, `secret`, `authorization` or `apikey`/`api_key`/`api-key`, or is
- * exactly `pass` or `pwd`, has its value replaced by `***`, at any depth and
- * inside arrays. Only plain objects and arrays are copied: primitives, `null`,
- * `undefined`, `Buffer`s and other class instances are returned as is. A
- * circular reference is replaced by the string `[Circular]`.
+ * exactly `pass`, `pwd` or one of `extraNames`, has its value replaced by
+ * `***`, at any depth and inside arrays. Only plain objects and arrays are
+ * copied: primitives, `null`, `undefined`, `Buffer`s and other class instances
+ * are returned as is. A circular reference is replaced by the string
+ * `[Circular]`.
  */
-export function redactObject (value: any): any {
-  return redactValue(value, new WeakSet())
+export function redactObject (value: any, extraNames: readonly string[] = []): any {
+  return redactValue(value, lowerCased(extraNames), new WeakSet())
 }
 
-function redactValue (value: any, ancestors: WeakSet<any>): any {
+function redactValue (value: any, extra: string[], ancestors: WeakSet<any>): any {
   const isArray = Array.isArray(value)
   if (!isArray && !isPlainObject(value)) return value
   if (ancestors.has(value)) return CIRCULAR
@@ -127,11 +149,11 @@ function redactValue (value: any, ancestors: WeakSet<any>): any {
   ancestors.add(value)
   let copy: any
   if (isArray) {
-    copy = value.map((item: any) => redactValue(item, ancestors))
+    copy = value.map((item: any) => redactValue(item, extra, ancestors))
   } else {
     copy = {}
     for (const key of Object.keys(value)) {
-      copy[key] = isSensitiveKey(key) ? REDACTED : redactValue(value[key], ancestors)
+      copy[key] = isSensitiveKey(key, extra) ? REDACTED : redactValue(value[key], extra, ancestors)
     }
   }
   ancestors.delete(value)
