@@ -4,7 +4,15 @@ import { ProviderRawData } from '../interfaces'
 import { ClientProxy } from '@nestjs/microservices'
 import { HttpService } from '@nestjs/axios'
 import { getRequestContext } from '../context'
+import { redactHeaders, redactUrl } from '../utils'
 
+/**
+ * Records each provider HTTP response as a `raw_data` event and, when `debug()`
+ * allows it, a debug log line.
+ * Credential query parameters and headers are masked as `***` before either
+ * (as are headers and body keys in `BaseApiService`'s `HTTP_DEBUG` dump), by
+ * the name lists in `src/utils/redact.ts`.
+ */
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
@@ -21,7 +29,8 @@ export class AxiosInterceptor implements OnModuleInit {
     const axios = this.httpService.axiosRef
     axios.interceptors.response.use(
       (response) => {
-        const url: string = decodeURIComponent(this.withParams(response.config))
+        // Redact before decoding, so a decoded '&' or '#' cannot cut a secret value short
+        const url: string = decodeURIComponent(this.redactUrl(this.withParams(response.config)))
         const body = response.data
         if (this.debug(url, body, response)) {
           const method: string = response.request.method
@@ -33,7 +42,7 @@ export class AxiosInterceptor implements OnModuleInit {
         return response
       },
       async (err) => {
-        const url: string = this.withParams(err?.config ?? err?.response?.config)
+        const url: string = this.redactUrl(this.withParams(err?.config ?? err?.response?.config))
         const body = err.response.data
 
         this.handleResponse(url, body, err.response)
@@ -83,11 +92,14 @@ export class AxiosInterceptor implements OnModuleInit {
     return false
   }
 
+  // Redacts the URL again: a subclass that registers its own axios interceptors
+  // (instead of onModuleInit's) may pass a URL that has not been redacted yet.
   protected handleResponse (
-    url: string,
+    rawUrl: string,
     body: any,
     response: AxiosResponse
   ): any {
+    const url = this.redactUrl(rawUrl)
     const {
       provider,
       accessionIds,
@@ -107,9 +119,16 @@ export class AxiosInterceptor implements OnModuleInit {
       method,
       url,
       body,
-      headers,
+      headers: redactHeaders(headers),
       payload
     })
+  }
+
+  // Masks credential query parameters (SENSITIVE_PARAM_NAMES) before a URL is
+  // logged, emitted or handed to filter/debug/extract. Override to add
+  // provider-specific parameter names.
+  protected redactUrl (url: string): string {
+    return redactUrl(url)
   }
 
   // Build a URL that includes serialized query params from axios config
