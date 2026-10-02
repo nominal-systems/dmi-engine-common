@@ -4,7 +4,15 @@ import { ProviderRawData } from '../interfaces'
 import { ClientProxy } from '@nestjs/microservices'
 import { HttpService } from '@nestjs/axios'
 import { getRequestContext } from '../context'
+import { redactHeaders, redactUrl } from '../utils'
 
+/**
+ * Records each provider HTTP response as a `raw_data` event and, when `debug()`
+ * allows it, a debug log line.
+ * Credential query parameters and headers are masked as `***` before either
+ * (as are headers and body keys in `BaseApiService`'s `HTTP_DEBUG` dump), by
+ * the name lists in `src/utils/redact.ts`.
+ */
 @Injectable()
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
@@ -69,11 +77,14 @@ export class AxiosInterceptor implements OnModuleInit {
     return false
   }
 
+  // Redacts the URL again: a subclass that registers its own axios interceptors
+  // (instead of onModuleInit's) may pass a URL that has not been redacted yet.
   protected handleResponse (
-    url: string,
+    rawUrl: string,
     body: any,
     response: AxiosResponse
   ): any {
+    const url = this.redactUrl(rawUrl)
     const {
       provider,
       accessionIds,
@@ -94,7 +105,7 @@ export class AxiosInterceptor implements OnModuleInit {
       method,
       url,
       body,
-      headers,
+      headers: redactHeaders(headers),
       payload,
       duration
     })
@@ -121,6 +132,13 @@ export class AxiosInterceptor implements OnModuleInit {
       duration: this.durationOf(config)
     }
     this.client.emit('raw_data', record)
+  }
+
+  // Masks credential query parameters (SENSITIVE_PARAM_NAMES) before a URL is
+  // logged, emitted or handed to filter/debug/extract. Override to add
+  // provider-specific parameter names.
+  protected redactUrl (url: string): string {
+    return redactUrl(url)
   }
 
   // Build a URL that includes serialized query params from axios config
@@ -284,7 +302,8 @@ export class AxiosInterceptor implements OnModuleInit {
   // percent-decoded for reading. A URL that cannot be decoded (a bare `%`) is kept as it is rather
   // than costing the call its record.
   private readableUrl (config: any): string {
-    const url = this.withParams(config)
+    // Redact before decoding, so a decoded '&' or '#' cannot cut a secret value short
+    const url = this.redactUrl(this.withParams(config))
     try {
       return decodeURIComponent(url)
     } catch {
@@ -307,7 +326,7 @@ export class AxiosInterceptor implements OnModuleInit {
     try {
       let url: string
       try {
-        url = this.withParams(config)
+        url = this.redactUrl(this.withParams(config))
       } catch {
         url = String(config?.url ?? '')
       }

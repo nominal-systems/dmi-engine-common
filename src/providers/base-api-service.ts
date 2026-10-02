@@ -4,6 +4,7 @@ import { catchError, map } from 'rxjs/operators'
 import { HttpException } from '@nestjs/common'
 import { HttpService } from '@nestjs/axios'
 import * as process from 'node:process'
+import { redactHeaders, redactObject, redactUrl } from '../utils'
 
 function isRetryableError (error: any): boolean {
   return !isCancel(error) && (
@@ -80,9 +81,9 @@ export class BaseApiService {
   ): Promise<T> {
     if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
-      console.log(`GET ${url}`)
+      console.log(`GET ${redactUrl(url)}`)
       console.log('-------------------------------------------------------------------------------------------------')
-      console.log(`headers= ${JSON.stringify(config.headers, null, 2)}`)
+      console.log(`headers= ${JSON.stringify(redactHeaders(config.headers), null, 2)}`)
       console.log('=================================================================================================\n')
     }
     const observable: Observable<T> = this.http.get<T>(url, config).pipe(
@@ -116,10 +117,10 @@ export class BaseApiService {
   ): Promise<T> {
     if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
-      console.log(`POST ${url}`)
+      console.log(`POST ${redactUrl(url)}`)
       console.log('-------------------------------------------------------------------------------------------------')
-      console.log(`body= ${JSON.stringify(data, null, 2)}`)
-      console.log(`headers= ${JSON.stringify(config.headers, null, 2)}`)
+      console.log(`body= ${JSON.stringify(redactObject(data), null, 2)}`)
+      console.log(`headers= ${JSON.stringify(redactHeaders(config.headers), null, 2)}`)
       console.log('=================================================================================================\n')
     }
     const observable: Observable<T> = this.http.post<T>(url, data, config).pipe(
