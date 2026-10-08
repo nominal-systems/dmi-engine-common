@@ -9,6 +9,8 @@ import { getRequestContext } from '../context'
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
   private readonly logger = new Logger(AxiosInterceptor.name)
+  // Each request's duration, keyed by its axios config (one per request), once it has been read.
+  private readonly durations = new WeakMap<Record<string, unknown>, number>()
 
   constructor (
     private readonly httpService: HttpService,
@@ -19,6 +21,8 @@ export class AxiosInterceptor implements OnModuleInit {
 
   public onModuleInit (): any {
     const axios = this.httpService.axiosRef
+    // Synchronous, so that a request is still dispatched in the same tick as it was without one.
+    axios.interceptors.request.use((config) => this.stampStartTime(config), undefined, { synchronous: true })
     axios.interceptors.response.use(
       (response) => this.onResponseFulfilled(response),
       async (err) => await this.onResponseRejected(err))
@@ -46,7 +50,8 @@ export class AxiosInterceptor implements OnModuleInit {
       url,
       body,
       headers: response.request.headers,
-      payload: response.config.data
+      payload: response.config.data,
+      duration: this.durationOf(response.config)
     }
   }
 
@@ -77,7 +82,8 @@ export class AxiosInterceptor implements OnModuleInit {
       integrationId,
       status,
       payload,
-      headers
+      headers,
+      duration
     } = this.extract(url, body, response)
     const method: string = response.request.method
     this.logger.debug(`${method} ${url}`)
@@ -91,7 +97,8 @@ export class AxiosInterceptor implements OnModuleInit {
       url,
       body,
       headers,
-      payload
+      payload,
+      duration
     })
   }
 
@@ -112,7 +119,8 @@ export class AxiosInterceptor implements OnModuleInit {
       status: 0,
       method: methodOf(config),
       url,
-      code: error?.code
+      code: error?.code,
+      duration: this.durationOf(config)
     }
     this.client.emit('raw_data', record)
   }
@@ -168,7 +176,7 @@ export class AxiosInterceptor implements OnModuleInit {
       const body = response.data
       if (this.debug(url, body, response)) {
         const method: string = response.request.method
-        this.logger.debug(`${method} ${url} -> ${response.status}`)
+        this.logger.debug(`${method} ${url} -> ${response.status}${this.took(response.config)}`)
       }
       if (this.filter(url, body, response)) {
         this.handleResponse(url, body, response)
@@ -198,12 +206,12 @@ export class AxiosInterceptor implements OnModuleInit {
 
     if (isCancel(err)) {
       // The caller abandoned the call; that is not a provider failure, and there is nothing to record.
-      this.logger.debug(`${method} ${url} -> ${code ?? 'canceled'}`)
+      this.logger.debug(`${method} ${url} -> ${code ?? 'canceled'}${this.took(config)}`)
       return
     }
 
     if (response == null) {
-      this.logger.error(`${method} ${url} -> ${code ?? 'no response'}: ${String(err?.message)}`)
+      this.logger.error(`${method} ${url} -> ${code ?? 'no response'}${this.took(config)}: ${String(err?.message)}`)
       if (config != null) {
         this.handleNoResponse(url, err)
       }
@@ -213,9 +221,9 @@ export class AxiosInterceptor implements OnModuleInit {
     const body = response.data
     if (body === undefined) {
       // The headers arrived and the body never did: the connection stalled or dropped mid-response.
-      this.logger.error(`${method} ${url} -> ${response.status} ${code ?? 'no body'}: ${String(err?.message)}`)
+      this.logger.error(`${method} ${url} -> ${response.status} ${code ?? 'no body'}${this.took(config)}: ${String(err?.message)}`)
     } else if (this.debug(url, body, response)) {
-      this.logger.debug(`${method} ${url} -> ${response.status}`)
+      this.logger.debug(`${method} ${url} -> ${response.status}${this.took(config)}`)
     }
     // `filter()` is not consulted for a failed call: engines' filters are written for success
     // bodies and content types, and a failure is what the audit trail exists to keep.
@@ -231,6 +239,32 @@ export class AxiosInterceptor implements OnModuleInit {
       this.logger.warn(`Could not extract accession ids from ${methodOf(response.config, response)} ${url} -> ${response.status}: ${String(error)}`)
       return []
     }
+  }
+
+  // Stamps when the request left on a copy of the caller's metadata, keeping its integrationId.
+  private stampStartTime (config: any): any {
+    config.metadata = { ...config.metadata, startTime: Date.now() }
+    return config
+  }
+
+  // The call's duration in milliseconds, fixed the first time it is read once the call is over, so
+  // the log line and the record agree. Undefined when the request was never stamped: an engine that
+  // registers its own axios interceptors in place of onModuleInit's gets no duration, and nothing else
+  // changes for it.
+  private durationOf (config: any): number | undefined {
+    const startTime = config?.metadata?.startTime
+    if (typeof startTime !== 'number') return undefined
+    let duration = this.durations.get(config)
+    if (duration === undefined) {
+      duration = Date.now() - startTime
+      this.durations.set(config, duration)
+    }
+    return duration
+  }
+
+  private took (config: any): string {
+    const duration = this.durationOf(config)
+    return duration === undefined ? '' : ` (${duration}ms)`
   }
 
   private integrationIdOf (config: any): string | undefined {

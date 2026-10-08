@@ -29,6 +29,16 @@
   `debug()`), or at error level when its body never arrived.
 - `ProviderRawData.code`. `headers` and `body` are now optional: a record for
   a request with no response has neither.
+- Request duration
+  ([#30](https://github.com/nominal-systems/dmi-engine-common/issues/30)).
+  `AxiosInterceptor.onModuleInit()` also registers a request interceptor that
+  stamps `config.metadata.startTime` (a copy of the caller's `metadata`, so
+  `integrationId` is kept). Every log line above ends its `-> ...` part with
+  the elapsed time, e.g. `GET <url> -> 200 (1423ms)`, and every `raw_data`
+  record carries `duration` in milliseconds. An engine that registers its own
+  axios interceptors instead of calling `onModuleInit()` gets no duration;
+  nothing else changes for it.
+- `ProviderRawData.duration`.
 
 ## 1.3.0
 

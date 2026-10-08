@@ -13,4 +13,6 @@ export interface ProviderRawData {
   payload?: any
   // The error code (`ECONNABORTED`, `ECONNRESET`, ...) when the request got no response
   code?: string
+  // Milliseconds from the request being sent to its response or failure
+  duration?: number
 }

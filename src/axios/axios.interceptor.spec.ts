@@ -9,16 +9,23 @@ describe('AxiosInterceptor', () => {
   let clientMock: any
 
   // Hold the registered interceptor callbacks from axios
+  let requestHandler: ((config: any) => any) | undefined
   let successHandler: ((response: any) => any) | undefined
   let errorHandler: ((error: any) => Promise<any>) | undefined
 
   beforeEach(() => {
+    requestHandler = undefined
     successHandler = undefined
     errorHandler = undefined
 
     httpServiceMock = {
       axiosRef: {
         interceptors: {
+          request: {
+            use: jest.fn((onFulfilled: any) => {
+              requestHandler = onFulfilled
+            })
+          },
           response: {
             use: jest.fn((
               success: any,
@@ -47,6 +54,13 @@ describe('AxiosInterceptor', () => {
     expect(httpServiceMock.axiosRef.interceptors.response.use).toHaveBeenCalledTimes(1)
     expect(typeof successHandler).toBe('function')
     expect(typeof errorHandler).toBe('function')
+  })
+
+  it('registers a request interceptor on module init', () => {
+    interceptor.onModuleInit()
+
+    expect(httpServiceMock.axiosRef.interceptors.request.use).toHaveBeenCalledTimes(1)
+    expect(typeof requestHandler).toBe('function')
   })
 
   it('emits raw_data on successful responses and returns the response', () => {
@@ -352,7 +366,8 @@ describe('AxiosInterceptor', () => {
           status: 0,
           method: 'GET',
           url: 'https://api.example.com/slow?id=7',
-          code: 'ECONNABORTED'
+          code: 'ECONNABORTED',
+          duration: expect.any(Number)
         })
       })
 
@@ -364,7 +379,7 @@ describe('AxiosInterceptor', () => {
         await expect(instance.post('https://api.example.com/orders', { a: 1 })).rejects.toThrow('socket hang up')
 
         expect(errorLog).toHaveBeenCalledTimes(1)
-        expect(errorLog.mock.calls[0][0]).toBe('POST https://api.example.com/orders -> ECONNRESET: socket hang up')
+        expect(errorLog.mock.calls[0][0]).toMatch(/^POST https:\/\/api\.example\.com\/orders -> ECONNRESET \(\d+ms\): socket hang up$/)
       })
 
       it('carries no request headers and no request body in the record', async () => {
@@ -490,7 +505,7 @@ describe('AxiosInterceptor', () => {
         await expect(instance.get('https://api.example.com/slow-body')).rejects.toThrow()
 
         expect(errorLog).toHaveBeenCalledTimes(1)
-        expect(errorLog.mock.calls[0][0]).toBe('GET https://api.example.com/slow-body -> 200 ECONNABORTED: timeout of 60000ms exceeded')
+        expect(errorLog.mock.calls[0][0]).toMatch(/^GET https:\/\/api\.example\.com\/slow-body -> 200 ECONNABORTED \(\d+ms\): timeout of 60000ms exceeded$/)
       })
     })
 
@@ -595,6 +610,211 @@ describe('AxiosInterceptor', () => {
       expect((successHandler as any)(response)).toBe(response)
       expect(clientMock.emit).not.toHaveBeenCalled()
       expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabResults/v6/GetStatus as raw_data: TypeError: cannot filter')
+    })
+  })
+
+  describe('request duration', () => {
+    type Adapter = (config: InternalAxiosRequestConfig) => Promise<AxiosResponse>
+
+    const START = 1_700_000_000_000
+
+    const attach = (adapter: Adapter, Interceptor: typeof AxiosInterceptor = AxiosInterceptor) => {
+      const instance = axios.create({ adapter })
+      const attached = new Interceptor({ axiosRef: instance } as any, clientMock)
+      ;(attached as any).provider = 'test-provider'
+      attached.onModuleInit()
+      return instance
+    }
+
+    const responseTo = (config: InternalAxiosRequestConfig, status: number, data: any): AxiosResponse => ({
+      data,
+      status,
+      statusText: '',
+      headers: {},
+      config,
+      request: { method: String(config.method).toUpperCase(), headers: {} }
+    })
+
+    // The provider takes `ms` to answer (the clock is faked).
+    const after = (ms: number, outcome: (config: InternalAxiosRequestConfig) => AxiosResponse | Error): Adapter =>
+      async (config) => {
+        jest.setSystemTime(Date.now() + ms)
+        const result = outcome(config)
+        if (result instanceof Error) throw result
+        return result
+      }
+
+    class LoggingInterceptor extends AxiosInterceptor {
+      public debug (url: string, body: any, response: AxiosResponse): boolean {
+        return true
+      }
+    }
+
+    let debugLog: jest.SpyInstance
+    let errorLog: jest.SpyInstance
+
+    beforeEach(() => {
+      jest.useFakeTimers({ now: START })
+      debugLog = jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => undefined)
+      errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+      jest.restoreAllMocks()
+    })
+
+    it('stamps metadata.startTime when the request is sent and keeps it through to the response', async () => {
+      let sentStartTime: number | undefined
+      const instance = attach(async (config) => {
+        sentStartTime = (config as any).metadata?.startTime
+        return responseTo(config, 200, { ok: true })
+      })
+
+      const response = await instance.get('https://api.example.com/x')
+
+      expect(sentStartTime).toBe(START)
+      expect((response.config as any).metadata.startTime).toBe(START)
+    })
+
+    it('keeps the caller\'s metadata.integrationId', async () => {
+      let sentMetadata: any
+      const instance = attach(async (config) => {
+        sentMetadata = (config as any).metadata
+        return responseTo(config, 200, { ok: true })
+      })
+
+      await instance.get('https://api.example.com/x', { metadata: { integrationId: 'integration-1' } } as any)
+
+      expect(sentMetadata).toMatchObject({ integrationId: 'integration-1', startTime: START })
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ integrationId: 'integration-1' }))
+    })
+
+    it('still sends the request in the same tick', async () => {
+      const adapter = jest.fn(async (config: InternalAxiosRequestConfig) => responseTo(config, 200, {}))
+      const instance = attach(adapter)
+
+      const pending = instance.get('https://api.example.com/x')
+
+      expect(adapter).toHaveBeenCalledTimes(1)
+      await pending
+    })
+
+    it('appends the duration to the debug line and puts it in the record on success', async () => {
+      const instance = attach(after(1423, (config) => responseTo(config, 200, { ok: true })), LoggingInterceptor)
+
+      await instance.get('https://api.example.com/x', { params: { page: 2 } })
+
+      expect(debugLog).toHaveBeenCalledWith('GET https://api.example.com/x?page=2 -> 200 (1423ms)')
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 200, duration: 1423 }))
+    })
+
+    it('appends the duration to the debug line and puts it in the record for an error response', async () => {
+      const instance = attach(after(87, (config) =>
+        new AxiosError('Request failed with status code 503', 'ERR_BAD_RESPONSE', config, {}, responseTo(config, 503, { message: 'unavailable' }))
+      ), LoggingInterceptor)
+
+      await expect(instance.post('https://api.example.com/orders', {})).rejects.toThrow('503')
+
+      expect(debugLog).toHaveBeenCalledWith('POST https://api.example.com/orders -> 503 (87ms)')
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 503, duration: 87 }))
+    })
+
+    it('puts the duration in the error line and the record when there is no response', async () => {
+      const instance = attach(after(60_000, (config) => new AxiosError('timeout of 60000ms exceeded', 'ECONNABORTED', config)))
+
+      await expect(instance.get('https://api.example.com/slow')).rejects.toThrow('timeout')
+
+      expect(errorLog).toHaveBeenCalledWith('GET https://api.example.com/slow -> ECONNABORTED (60000ms): timeout of 60000ms exceeded')
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 0, code: 'ECONNABORTED', duration: 60_000 }))
+    })
+
+    it('puts the duration in the error line and the record when the body never arrived', async () => {
+      const instance = attach(after(60_000, (config) =>
+        new AxiosError('timeout of 60000ms exceeded', 'ECONNABORTED', config, {}, responseTo(config, 200, undefined))
+      ))
+
+      await expect(instance.get('https://api.example.com/slow-body')).rejects.toThrow('timeout')
+
+      expect(errorLog).toHaveBeenCalledWith('GET https://api.example.com/slow-body -> 200 ECONNABORTED (60000ms): timeout of 60000ms exceeded')
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 200, duration: 60_000 }))
+    })
+
+    it('times a request afresh when it is re-sent with an earlier request\'s config', async () => {
+      let elapsed = 10
+      const instance = attach(async (config) => {
+        jest.setSystemTime(Date.now() + elapsed)
+        return responseTo(config, 200, {})
+      })
+
+      const first = await instance.get('https://api.example.com/x')
+      elapsed = 30
+      await instance.request(first.config)
+
+      expect(clientMock.emit.mock.calls.map(([, record]: any[]) => record.duration)).toEqual([10, 30])
+    })
+
+    it('times each request on its own', async () => {
+      const instance = attach(after(10, (config) => responseTo(config, 200, {})))
+
+      await instance.get('https://api.example.com/first')
+      jest.setSystemTime(Date.now() + 5_000)
+      await instance.get('https://api.example.com/second')
+
+      expect(clientMock.emit.mock.calls.map(([, record]: any[]) => record.duration)).toEqual([10, 10])
+    })
+
+    // An engine may register its own axios interceptors in place of onModuleInit's (and so no
+    // request interceptor) while still recording through handleResponse.
+    describe('in a subclass that overrides onModuleInit', () => {
+      class OwnHandlersInterceptor extends AxiosInterceptor {
+        public onModuleInit (): void {
+          const axiosRef = (this as any).httpService.axiosRef
+          axiosRef.interceptors.response.use(
+            (response: AxiosResponse) => {
+              this.handleResponse(this.withParams(response.config), response.data, response)
+              return response
+            },
+            async (error: any) => {
+              if (error?.response != null) {
+                this.handleResponse(this.withParams(error.config), error.response.data, error.response)
+              }
+              return await Promise.reject(error)
+            })
+        }
+      }
+
+      it('records a response with no duration, and nothing else changes', async () => {
+        const instance = attach(after(250, (config) => responseTo(config, 200, { ok: true })), OwnHandlersInterceptor)
+
+        const response = await instance.get('https://api.example.com/x')
+
+        expect(response.status).toBe(200)
+        expect((response.config as any).metadata).toBeUndefined()
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', {
+          provider: 'test-provider',
+          accessionIds: [],
+          status: 200,
+          method: 'GET',
+          url: 'https://api.example.com/x',
+          body: { ok: true },
+          headers: {},
+          payload: undefined
+        })
+        expect(clientMock.emit.mock.calls[0][1].duration).toBeUndefined()
+      })
+
+      it('records an error response with no duration', async () => {
+        const instance = attach(after(250, (config) =>
+          new AxiosError('Request failed with status code 500', 'ERR_BAD_RESPONSE', config, {}, responseTo(config, 500, { message: 'Boom' }))
+        ), OwnHandlersInterceptor)
+
+        await expect(instance.get('https://api.example.com/x', { metadata: { integrationId: 'integration-2' } } as any)).rejects.toThrow('500')
+
+        const record = clientMock.emit.mock.calls[0][1]
+        expect(record).toMatchObject({ status: 500, integrationId: 'integration-2' })
+        expect(record.duration).toBeUndefined()
+      })
     })
   })
 })
