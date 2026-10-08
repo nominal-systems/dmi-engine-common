@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `AxiosInterceptor` no longer replaces a failed request's error with
+  `TypeError: Cannot read properties of undefined (reading 'data')` when the
+  request got no response (a timeout, a reset or refused connection, a DNS
+  failure). The caller now receives the original axios error, with its `code`
+  ([#29](https://github.com/nominal-systems/dmi-engine-common/issues/29)).
+- Recording a call can no longer change its outcome. Whatever `filter()`,
+  `debug()`, `extractAccessionIds()` or a `handleResponse()` override throws,
+  on success or on failure, is logged at warn and the response or the original
+  error is passed on. An `extractAccessionIds()` that cannot read a body (an
+  error body, typically) no longer costs the record: it is emitted with
+  `accessionIds: []`.
+
+### Added
+
+- A request that got no response is logged at error level
+  (`<METHOD> <url> -> <code>: <message>`) and emitted as a `raw_data` record
+  with `status: 0` and the error `code`. That record carries no request
+  headers and no request body. It goes through `handleNoResponse()`, which an
+  engine can override; the response hooks are not called for it. A request
+  the caller cancelled is logged at debug level and not recorded.
+- A failed request that did get a response is logged with the same
+  `<METHOD> <url> -> <status>` debug line as a successful one (still gated by
+  `debug()`), or at error level when its body never arrived.
+- `ProviderRawData.code`. `headers` and `body` are now optional: a record for
+  a request with no response has neither.
+
 ## 1.3.0
 
 Adds integration context propagation so `raw_data` events (persisted as
