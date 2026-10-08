@@ -12,7 +12,8 @@
 - Recording a call can no longer change its outcome. Whatever `filter()`,
   `debug()`, `extractAccessionIds()` or a `handleResponse()` override throws,
   on success or on failure, is logged at warn and the response or the original
-  error is passed on. An `extractAccessionIds()` that cannot read a body (an
+  error is passed on; if even that report fails (a `withParams()` override that
+  throws, say), the outcome is still passed on. An `extractAccessionIds()` that cannot read a body (an
   error body, typically) no longer costs the record: it is emitted with
   `accessionIds: []`.
 
@@ -26,7 +27,10 @@
   the caller cancelled is logged at debug level and not recorded.
 - A failed request that did get a response is logged with the same
   `<METHOD> <url> -> <status>` debug line as a successful one (still gated by
-  `debug()`), or at error level when its body never arrived.
+  `debug()`). One whose body never arrived (the headers came, then the
+  connection stalled or dropped) is logged at error level and recorded as a
+  request that got no response, `status: 0` and the error code, whichever
+  axios version attached the response.
 - `ProviderRawData.code`. `headers` and `body` are now optional: a record for
   a request with no response has neither.
 - Request duration

@@ -460,6 +460,23 @@ describe('AxiosInterceptor', () => {
         expect(clientMock.emit).not.toHaveBeenCalled()
       })
 
+      it('passes the original error on even when a withParams() override throws, and logs the bare url', async () => {
+        class ThrowingUrlInterceptor extends AxiosInterceptor {
+          protected withParams (): string { throw new Error('masking bug') }
+        }
+        let original: AxiosError | undefined
+        const instance = attach(async (config) => {
+          original = new AxiosError('socket hang up', 'ECONNRESET', config)
+          throw original
+        }, ThrowingUrlInterceptor)
+
+        const rejection = await instance.get('https://api.example.com/slow', { params: { id: 7 } }).catch((error) => error)
+
+        expect(rejection).toBe(original)
+        expect(warnLog).toHaveBeenCalledTimes(1)
+        expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/slow as raw_data: Error: masking bug')
+      })
+
       it('passes an error that is not from a request through without a record', async () => {
         interceptor.onModuleInit()
         const original = new Error('thrown before any request was made')
@@ -488,15 +505,30 @@ describe('AxiosInterceptor', () => {
         expect(rejection.code).toBe('ECONNABORTED')
       })
 
-      it('still records the call, with the status the headers carried and no body', async () => {
-        const instance = attach(async (config) => { throw stalled(config) }, SuccessShapeInterceptor)
+      it('records it as a call that got no response: status 0 and the error code, through no response hook', async () => {
+        // Older axios versions reject this same failure with no response at all; the record must not
+        // depend on which one an engine runs, nor read as a call that answered 200.
+        const hooks = { debug: 0, extractAccessionIds: 0, handleResponse: 0 }
+        class CountingInterceptor extends AxiosInterceptor {
+          public debug (url: string, body: any, response: AxiosResponse): boolean { hooks.debug++; return true }
+          public extractAccessionIds (url: string, body: any, response: AxiosResponse): string[] { hooks.extractAccessionIds++; return [] }
+          protected handleResponse (url: string, body: any, response: AxiosResponse): any { hooks.handleResponse++; return super.handleResponse(url, body, response) }
+        }
+        const instance = attach(async (config) => { throw stalled(config) }, CountingInterceptor)
 
         await expect(instance.get('https://api.example.com/LabResults/v6/GetStatus')).rejects.toThrow()
 
         expect(clientMock.emit).toHaveBeenCalledTimes(1)
-        const record = clientMock.emit.mock.calls[0][1]
-        expect(record).toMatchObject({ status: 200, method: 'GET', url: 'https://api.example.com/LabResults/v6/GetStatus', accessionIds: [] })
-        expect(record.body).toBeUndefined()
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', {
+          provider: 'test-provider',
+          accessionIds: [],
+          status: 0,
+          method: 'GET',
+          url: 'https://api.example.com/LabResults/v6/GetStatus',
+          code: 'ECONNABORTED',
+          duration: expect.any(Number)
+        })
+        expect(hooks).toEqual({ debug: 0, extractAccessionIds: 0, handleResponse: 0 })
       })
 
       it('logs it at error level with the status and the error code', async () => {
@@ -558,6 +590,19 @@ describe('AxiosInterceptor', () => {
         expect(warnLog.mock.calls[0][0]).toMatch(/^Could not record GET https:\/\/api\.example\.com\/orders as raw_data: TypeError/)
       })
 
+      it('passes the provider error to the caller unchanged even when a withParams() override throws', async () => {
+        class ThrowingUrlInterceptor extends AxiosInterceptor {
+          protected withParams (): string { throw new Error('masking bug') }
+        }
+        const instance = attach(rejectWith(400, providerError), ThrowingUrlInterceptor)
+
+        const rejection = await instance.get('https://api.example.com/orders').catch((error) => error)
+
+        expect(rejection).toBeInstanceOf(AxiosError)
+        expect(rejection.response.status).toBe(400)
+        expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/orders as raw_data: Error: masking bug')
+      })
+
       it('does not consult filter(), so an error body a success filter would drop is still recorded', async () => {
         class JsonOnlyInterceptor extends AxiosInterceptor {
           public filter (url: string, body: any, response: AxiosResponse): boolean {
@@ -610,6 +655,34 @@ describe('AxiosInterceptor', () => {
       expect((successHandler as any)(response)).toBe(response)
       expect(clientMock.emit).not.toHaveBeenCalled()
       expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabResults/v6/GetStatus as raw_data: TypeError: cannot filter')
+    })
+
+    it('returns the response when a withParams() override throws, and logs the bare url', () => {
+      jest.spyOn(interceptor as any, 'withParams').mockImplementation(() => { throw new Error('masking bug') })
+      interceptor.onModuleInit()
+      const response = okResponse()
+
+      expect((successHandler as any)(response)).toBe(response)
+      expect(clientMock.emit).not.toHaveBeenCalled()
+      expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabResults/v6/GetStatus as raw_data: Error: masking bug')
+    })
+
+    it('returns the response when a hook throws a value that cannot be printed', () => {
+      jest.spyOn(interceptor, 'filter').mockImplementation(() => { throw Object.create(null) })
+      interceptor.onModuleInit()
+      const response = okResponse()
+
+      expect((successHandler as any)(response)).toBe(response)
+      expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabResults/v6/GetStatus as raw_data: [object Object]')
+    })
+
+    it('returns the response when even the warn line cannot be written', () => {
+      jest.spyOn(interceptor, 'filter').mockImplementation(() => { throw new TypeError('cannot filter') })
+      warnLog.mockImplementation(() => { throw new Error('log sink down') })
+      interceptor.onModuleInit()
+      const response = okResponse()
+
+      expect((successHandler as any)(response)).toBe(response)
     })
   })
 
@@ -737,7 +810,7 @@ describe('AxiosInterceptor', () => {
       await expect(instance.get('https://api.example.com/slow-body')).rejects.toThrow('timeout')
 
       expect(errorLog).toHaveBeenCalledWith('GET https://api.example.com/slow-body -> 200 ECONNABORTED (60000ms): timeout of 60000ms exceeded')
-      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 200, duration: 60_000 }))
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 0, code: 'ECONNABORTED', duration: 60_000 }))
     })
 
     it('times a request afresh when it is re-sent with an earlier request\'s config', async () => {

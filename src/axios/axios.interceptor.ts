@@ -221,8 +221,16 @@ export class AxiosInterceptor implements OnModuleInit {
     const body = response.data
     if (body === undefined) {
       // The headers arrived and the body never did: the connection stalled or dropped mid-response.
+      // Depending on its version, axios rejects that with no response at all (1.6, 1.13) or with the
+      // response it had started and no data (1.17). It is the same failure either way, so it is
+      // recorded the same way: status 0 and the error code, not as a call that answered.
       this.logger.error(`${method} ${url} -> ${response.status} ${code ?? 'no body'}${this.took(config)}: ${String(err?.message)}`)
-    } else if (this.debug(url, body, response)) {
+      if (config != null) {
+        this.handleNoResponse(url, err)
+      }
+      return
+    }
+    if (this.debug(url, body, response)) {
       this.logger.debug(`${method} ${url} -> ${response.status}${this.took(config)}`)
     }
     // `filter()` is not consulted for a failed call: engines' filters are written for success
@@ -236,7 +244,7 @@ export class AxiosInterceptor implements OnModuleInit {
     try {
       return this.extractAccessionIds(url, body, response)
     } catch (error) {
-      this.logger.warn(`Could not extract accession ids from ${methodOf(response.config, response)} ${url} -> ${response.status}: ${String(error)}`)
+      this.logger.warn(`Could not extract accession ids from ${methodOf(response.config, response)} ${url} -> ${response.status}: ${describe(error)}`)
       return []
     }
   }
@@ -271,8 +279,30 @@ export class AxiosInterceptor implements OnModuleInit {
     return config?.metadata?.integrationId ?? getRequestContext()?.integrationId
   }
 
+  // Runs where recording has already failed, so nothing in it may throw: an overridden withParams()
+  // that throws gets the bare config url instead, and an error that cannot be printed a fixed text.
   private warnNotRecorded (config: any, error: unknown, response?: AxiosResponse): void {
-    this.logger.warn(`Could not record ${methodOf(config, response)} ${this.withParams(config)} as raw_data: ${String(error)}`)
+    try {
+      let url: string
+      try {
+        url = this.withParams(config)
+      } catch {
+        url = String(config?.url ?? '')
+      }
+      this.logger.warn(`Could not record ${methodOf(config, response)} ${url} as raw_data: ${describe(error)}`)
+    } catch {
+      // Nothing is left to report with; the call's outcome must not depend on it.
+    }
+  }
+}
+
+// An error as text, for a log line that must not throw: `String()` throws on a value with no
+// usable toString (an object made with `Object.create(null)`, say).
+function describe (error: unknown): string {
+  try {
+    return String(error)
+  } catch {
+    return Object.prototype.toString.call(error)
   }
 }
 
