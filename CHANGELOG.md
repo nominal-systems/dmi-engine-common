@@ -24,7 +24,12 @@
   with `status: 0` and the error `code`. That record carries no request
   headers and no request body. It goes through `handleNoResponse()`, which an
   engine can override; the response hooks are not called for it. A request
-  the caller cancelled is logged at debug level and not recorded.
+  the caller cancelled is logged at debug level and not recorded. A rejection
+  with neither a config nor a response (another interceptor threw, say) is
+  logged as an unexpected error in the interceptor chain and not recorded.
+- A failed request's url is percent-decoded for its log line and record, as a
+  successful one's already was. A url that cannot be decoded (a bare `%`) is
+  kept as it is; on success it used to cost the call its record.
 - A failed request that did get a response is logged with the same
   `<METHOD> <url> -> <status>` debug line as a successful one (still gated by
   `debug()`). One whose body never arrived (the headers came, then the
@@ -39,7 +44,9 @@
   stamps `config.metadata.startTime` (a copy of the caller's `metadata`, so
   `integrationId` is kept). Every log line above ends its `-> ...` part with
   the elapsed time, e.g. `GET <url> -> 200 (1423ms)`, and every `raw_data`
-  record carries `duration` in milliseconds. An engine that registers its own
+  record carries `duration` in milliseconds. The duration is also kept on the
+  request's metadata (`config.metadata.duration`), so a caller can read it from
+  `response.config` or `error.config`. An engine that registers its own
   axios interceptors instead of calling `onModuleInit()` gets no duration;
   nothing else changes for it.
 - `ProviderRawData.duration`.

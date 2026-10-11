@@ -9,8 +9,6 @@ import { getRequestContext } from '../context'
 export class AxiosInterceptor implements OnModuleInit {
   protected provider: string
   private readonly logger = new Logger(AxiosInterceptor.name)
-  // Each request's duration, keyed by its axios config (one per request), once it has been read.
-  private readonly durations = new WeakMap<Record<string, unknown>, number>()
 
   constructor (
     private readonly httpService: HttpService,
@@ -172,7 +170,8 @@ export class AxiosInterceptor implements OnModuleInit {
   // here and the response is handed on untouched.
   private onResponseFulfilled (response: AxiosResponse): AxiosResponse {
     try {
-      const url: string = decodeURIComponent(this.withParams(response.config))
+      this.stampDuration(response.config)
+      const url: string = this.readableUrl(response.config)
       const body = response.data
       if (this.debug(url, body, response)) {
         const method: string = response.request.method
@@ -190,6 +189,7 @@ export class AxiosInterceptor implements OnModuleInit {
   // Likewise for a failed call: the caller always receives the original error.
   private async onResponseRejected (err: any): Promise<never> {
     try {
+      this.stampDuration(err?.config ?? err?.response?.config)
       this.recordFailure(err)
     } catch (error) {
       this.warnNotRecorded(err?.config ?? err?.response?.config, error, err?.response)
@@ -199,10 +199,17 @@ export class AxiosInterceptor implements OnModuleInit {
 
   private recordFailure (err: any): void {
     const config = err?.config ?? err?.response?.config
-    const url: string = this.withParams(config)
+    const url: string = this.readableUrl(config)
     const response: AxiosResponse | undefined = err?.response ?? undefined
     const method = methodOf(config, response)
     const code: string | undefined = err?.code
+
+    if (config == null && response == null) {
+      // Not a request that failed: something else in the interceptor chain threw (another
+      // interceptor, say). Said as such, so it does not read as a provider call that got no response.
+      this.logger.error(`Unexpected error in the response interceptor chain: ${describe(err)}`)
+      return
+    }
 
     if (isCancel(err)) {
       // The caller abandoned the call; that is not a provider failure, and there is nothing to record.
@@ -212,9 +219,7 @@ export class AxiosInterceptor implements OnModuleInit {
 
     if (response == null) {
       this.logger.error(`${method} ${url} -> ${code ?? 'no response'}${this.took(config)}: ${String(err?.message)}`)
-      if (config != null) {
-        this.handleNoResponse(url, err)
-      }
+      this.handleNoResponse(url, err)
       return
     }
 
@@ -249,25 +254,42 @@ export class AxiosInterceptor implements OnModuleInit {
     }
   }
 
-  // Stamps when the request left on a copy of the caller's metadata, keeping its integrationId.
+  // Stamps when the request left on a copy of the caller's metadata, keeping its integrationId and
+  // dropping the duration of an earlier request whose config is being re-sent.
   private stampStartTime (config: any): any {
-    config.metadata = { ...config.metadata, startTime: Date.now() }
+    const metadata = { ...config.metadata, startTime: Date.now() }
+    delete metadata.duration
+    config.metadata = metadata
     return config
   }
 
-  // The call's duration in milliseconds, fixed the first time it is read once the call is over, so
-  // the log line and the record agree. Undefined when the request was never stamped: an engine that
-  // registers its own axios interceptors in place of onModuleInit's gets no duration, and nothing else
-  // changes for it.
-  private durationOf (config: any): number | undefined {
+  // Fixes the call's duration in milliseconds on its metadata when its response or failure arrives,
+  // once, so every line and record for the call carries the same value, and the caller can read it
+  // too (`response.config.metadata.duration`, `error.config.metadata.duration`). Nothing when the
+  // request was never stamped: an engine that registers its own axios interceptors in place of
+  // onModuleInit's gets no duration, and nothing else changes for it.
+  private stampDuration (config: any): void {
     const startTime = config?.metadata?.startTime
-    if (typeof startTime !== 'number') return undefined
-    let duration = this.durations.get(config)
-    if (duration === undefined) {
-      duration = Date.now() - startTime
-      this.durations.set(config, duration)
+    if (typeof startTime === 'number') {
+      config.metadata.duration = Date.now() - startTime
     }
-    return duration
+  }
+
+  private durationOf (config: any): number | undefined {
+    const duration = config?.metadata?.duration
+    return typeof duration === 'number' ? duration : undefined
+  }
+
+  // The URL as logged and recorded, the same on success and failure: query params serialized and
+  // percent-decoded for reading. A URL that cannot be decoded (a bare `%`) is kept as it is rather
+  // than costing the call its record.
+  private readableUrl (config: any): string {
+    const url = this.withParams(config)
+    try {
+      return decodeURIComponent(url)
+    } catch {
+      return url
+    }
   }
 
   private took (config: any): string {

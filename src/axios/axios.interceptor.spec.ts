@@ -484,6 +484,26 @@ describe('AxiosInterceptor', () => {
         await expect((errorHandler as any)(original)).rejects.toBe(original)
         expect(clientMock.emit).not.toHaveBeenCalled()
       })
+
+      it('logs an error that is not from a request as what it is, not as a call that got no response', async () => {
+        interceptor.onModuleInit()
+
+        await expect((errorHandler as any)(new TypeError('thrown by another interceptor'))).rejects.toThrow()
+
+        expect(errorLog).toHaveBeenCalledTimes(1)
+        expect(errorLog.mock.calls[0][0]).toBe('Unexpected error in the response interceptor chain: TypeError: thrown by another interceptor')
+      })
+
+      it('logs and records the url decoded, as the success path does', async () => {
+        const instance = attach(async (config) => {
+          throw new AxiosError('socket hang up', 'ECONNRESET', config)
+        })
+
+        await expect(instance.get('https://api.example.com/kits', { params: { 'filter[code]': 'ABC' } })).rejects.toThrow()
+
+        expect(errorLog.mock.calls[0][0]).toMatch(/^GET https:\/\/api\.example\.com\/kits\?filter\[code\]=ABC -> ECONNRESET/)
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ url: 'https://api.example.com/kits?filter[code]=ABC' }))
+      })
     })
 
     describe('with a response whose body never arrived', () => {
@@ -603,6 +623,23 @@ describe('AxiosInterceptor', () => {
         expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/orders as raw_data: Error: masking bug')
       })
 
+      it('records the url decoded, as the success path does', async () => {
+        const instance = attach(rejectWith(400, providerError))
+
+        await expect(instance.get('https://api.example.com/kits', { params: { 'filter[code]': 'ABC' } })).rejects.toThrow()
+
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 400, url: 'https://api.example.com/kits?filter[code]=ABC' }))
+      })
+
+      it('still records a url that cannot be decoded, as it is', async () => {
+        const instance = attach(rejectWith(400, providerError))
+
+        await expect(instance.get('https://api.example.com/odd%zz')).rejects.toThrow()
+
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 400, url: 'https://api.example.com/odd%zz' }))
+        expect(warnLog).not.toHaveBeenCalled()
+      })
+
       it('does not consult filter(), so an error body a success filter would drop is still recorded', async () => {
         class JsonOnlyInterceptor extends AxiosInterceptor {
           public filter (url: string, body: any, response: AxiosResponse): boolean {
@@ -674,6 +711,15 @@ describe('AxiosInterceptor', () => {
 
       expect((successHandler as any)(response)).toBe(response)
       expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabResults/v6/GetStatus as raw_data: [object Object]')
+    })
+
+    it('records a url that cannot be decoded as it is, instead of losing the record', () => {
+      interceptor.onModuleInit()
+      const response = { ...okResponse(), config: { url: 'https://api.example.com/odd%zz', data: null } }
+
+      expect((successHandler as any)(response)).toBe(response)
+      expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 200, url: 'https://api.example.com/odd%zz' }))
+      expect(warnLog).not.toHaveBeenCalled()
     })
 
     it('returns the response when even the warn line cannot be written', () => {
@@ -815,7 +861,9 @@ describe('AxiosInterceptor', () => {
 
     it('times a request afresh when it is re-sent with an earlier request\'s config', async () => {
       let elapsed = 10
+      const inFlight: unknown[] = []
       const instance = attach(async (config) => {
+        inFlight.push((config as any).metadata.duration)
         jest.setSystemTime(Date.now() + elapsed)
         return responseTo(config, 200, {})
       })
@@ -825,6 +873,25 @@ describe('AxiosInterceptor', () => {
       await instance.request(first.config)
 
       expect(clientMock.emit.mock.calls.map(([, record]: any[]) => record.duration)).toEqual([10, 30])
+      // The earlier request's duration does not ride along while the re-sent one is in flight.
+      expect(inFlight).toEqual([undefined, undefined])
+    })
+
+    it('leaves the duration on the response\'s metadata for the caller, the value the record carries', async () => {
+      const instance = attach(after(1423, (config) => responseTo(config, 200, { ok: true })))
+
+      const response = await instance.get('https://api.example.com/x')
+
+      expect((response.config as any).metadata.duration).toBe(1423)
+      expect(clientMock.emit.mock.calls[0][1].duration).toBe(1423)
+    })
+
+    it('leaves the duration on a failed call\'s metadata for the caller', async () => {
+      const instance = attach(after(60_000, (config) => new AxiosError('timeout of 60000ms exceeded', 'ECONNABORTED', config)))
+
+      const rejection = await instance.get('https://api.example.com/slow').catch((error) => error)
+
+      expect(rejection.config.metadata.duration).toBe(60_000)
     })
 
     it('times each request on its own', async () => {
