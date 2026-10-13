@@ -4,6 +4,7 @@ import { catchError, map } from 'rxjs/operators'
 import { HttpException } from '@nestjs/common'
 import { HttpService } from '@nestjs/axios'
 import * as process from 'node:process'
+import { redactHeaders, redactObject, redactUrl } from '../utils'
 
 function isRetryableError (error: any): boolean {
   return !isCancel(error) && (
@@ -64,6 +65,13 @@ export class BaseApiService {
   constructor (private readonly http: HttpService) {
   }
 
+  // Provider-specific parameter, header and body key names that the HTTP_DEBUG
+  // dump masks on top of the defaults in src/utils/redact.ts; each matches
+  // exactly, ignoring case.
+  protected extraSensitiveNames (): readonly string[] {
+    return []
+  }
+
   /**
    * Retries by default (1 retry, 100ms delay) on 5xx, 429, and network errors,
    * honoring a `Retry-After` response header over the configured delay when
@@ -80,9 +88,9 @@ export class BaseApiService {
   ): Promise<T> {
     if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
-      console.log(`GET ${url}`)
+      console.log(`GET ${redactUrl(url, this.extraSensitiveNames())}`)
       console.log('-------------------------------------------------------------------------------------------------')
-      console.log(`headers= ${JSON.stringify(config.headers, null, 2)}`)
+      console.log(`headers= ${JSON.stringify(redactHeaders(config.headers, this.extraSensitiveNames()), null, 2)}`)
       console.log('=================================================================================================\n')
     }
     const observable: Observable<T> = this.http.get<T>(url, config).pipe(
@@ -116,10 +124,10 @@ export class BaseApiService {
   ): Promise<T> {
     if (process.env.HTTP_DEBUG === 'true') {
       console.log('=================================================================================================')
-      console.log(`POST ${url}`)
+      console.log(`POST ${redactUrl(url, this.extraSensitiveNames())}`)
       console.log('-------------------------------------------------------------------------------------------------')
-      console.log(`body= ${JSON.stringify(data, null, 2)}`)
-      console.log(`headers= ${JSON.stringify(config.headers, null, 2)}`)
+      console.log(`body= ${JSON.stringify(redactObject(data, this.extraSensitiveNames()), null, 2)}`)
+      console.log(`headers= ${JSON.stringify(redactHeaders(config.headers, this.extraSensitiveNames()), null, 2)}`)
       console.log('=================================================================================================\n')
     }
     const observable: Observable<T> = this.http.post<T>(url, data, config).pipe(
