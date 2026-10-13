@@ -653,6 +653,69 @@ describe('AxiosInterceptor', () => {
         expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ status: 502, body: '<html>Bad Gateway</html>' }))
       })
     })
+
+    describe('with a credential in the url', () => {
+      // Classic Antech appends its accessToken to every URL; Antech V6's test guide sends accesstoken
+      // as a param. A failed call's error line and record are built from the same masked URL.
+      const SECRET = 'secret-token-1'
+      const reset: Adapter = async (config) => { throw new AxiosError('socket hang up', 'ECONNRESET', config) }
+
+      it('masks it in the error line and the record of a call that got no response', async () => {
+        const instance = attach(reset)
+
+        await expect(instance.get(
+          `https://api.example.com/LabOrders/GetStatus?ClinicAccessionID=A-1&accessToken=${SECRET}`,
+          { params: { accesstoken: SECRET } }
+        )).rejects.toThrow('socket hang up')
+
+        expect(errorLog).toHaveBeenCalledTimes(1)
+        expect(errorLog.mock.calls[0][0]).toMatch(/^GET https:\/\/api\.example\.com\/LabOrders\/GetStatus\?ClinicAccessionID=A-1&accessToken=\*\*\*&accesstoken=\*\*\* -> ECONNRESET \(\d+ms\): socket hang up$/)
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({
+          status: 0,
+          url: 'https://api.example.com/LabOrders/GetStatus?ClinicAccessionID=A-1&accessToken=***&accesstoken=***'
+        }))
+        expect(JSON.stringify([errorLog.mock.calls, clientMock.emit.mock.calls])).not.toContain(SECRET)
+      })
+
+      it('masks it in the error line and the record of a response whose body never arrived', async () => {
+        const instance = attach(async (config) => {
+          throw new AxiosError('timeout of 60000ms exceeded', 'ECONNABORTED', config, {}, responseTo(config, 200, undefined))
+        })
+
+        await expect(instance.get(`https://api.example.com/LabOrders/GetStatus?accessToken=${SECRET}`)).rejects.toThrow()
+
+        expect(errorLog.mock.calls[0][0]).toMatch(/^GET https:\/\/api\.example\.com\/LabOrders\/GetStatus\?accessToken=\*\*\* -> 200 ECONNABORTED /)
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({
+          status: 0,
+          url: 'https://api.example.com/LabOrders/GetStatus?accessToken=***'
+        }))
+        expect(JSON.stringify([errorLog.mock.calls, clientMock.emit.mock.calls])).not.toContain(SECRET)
+      })
+
+      it('masks a name the integration adds, on a failed call too', async () => {
+        class SessionInterceptor extends AxiosInterceptor {
+          protected extraSensitiveNames (): readonly string[] { return ['sessionId'] }
+        }
+        const instance = attach(reset, SessionInterceptor)
+
+        await expect(instance.get('https://api.example.com/x', { params: { sessionId: SECRET, page: 2 } })).rejects.toThrow()
+
+        expect(errorLog.mock.calls[0][0]).toMatch(/^GET https:\/\/api\.example\.com\/x\?sessionId=\*\*\*&page=2 -> ECONNRESET /)
+        expect(clientMock.emit).toHaveBeenCalledWith('raw_data', expect.objectContaining({ url: 'https://api.example.com/x?sessionId=***&page=2' }))
+      })
+
+      it('leaves the query out of the failure report when withParams() itself throws', async () => {
+        class BrokenMaskingInterceptor extends AxiosInterceptor {
+          protected withParams (): string { throw new Error('masking bug') }
+        }
+        const instance = attach(reset, BrokenMaskingInterceptor)
+
+        await expect(instance.get(`https://api.example.com/LabOrders/GetStatus?accessToken=${SECRET}`)).rejects.toThrow('socket hang up')
+
+        expect(warnLog).toHaveBeenCalledTimes(1)
+        expect(warnLog.mock.calls[0][0]).toBe('Could not record GET https://api.example.com/LabOrders/GetStatus as raw_data: Error: masking bug')
+      })
+    })
   })
 
   describe('a successful call whose hooks throw', () => {

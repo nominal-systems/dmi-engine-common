@@ -293,14 +293,15 @@ export class AxiosInterceptor implements OnModuleInit {
   }
 
   // Runs where recording has already failed, so nothing in it may throw: an overridden withParams()
-  // that throws gets the bare config url instead, and an error that cannot be printed a fixed text.
+  // that throws gets the config url without its query instead (withParams() is what masks a
+  // credential there), and an error that cannot be printed a fixed text.
   private warnNotRecorded (config: any, error: unknown, response?: AxiosResponse): void {
     try {
       let url: string
       try {
         url = this.withParams(config)
       } catch {
-        url = String(config?.url ?? '')
+        url = String(config?.url ?? '').split(/[?#]/)[0]
       }
       this.logger.warn(`Could not record ${methodOf(config, response)} ${url} as raw_data: ${describe(error)}`)
     } catch {
