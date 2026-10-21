@@ -176,6 +176,42 @@ describe('BaseApiService', () => {
         message: 'Failed to GET /test'
       })
     })
+
+    it('keeps a GET transport error as the cause', async () => {
+      const { service, adapter } = setup()
+      const reset = new AxiosError('read ECONNRESET', 'ECONNRESET')
+      adapter.mockRejectedValue(reset)
+
+      const error: any = await service.get('/test', { retry: false }).catch((e) => e)
+
+      expect(error).toBeInstanceOf(HttpException)
+      expect(error.getStatus()).toBe(500)
+      expect(error.cause).toBe(reset)
+    })
+
+    it('keeps a POST timeout as the cause', async () => {
+      const { service, adapter } = setup()
+      const timeout = new AxiosError('timeout of 30000ms exceeded', AxiosError.ECONNABORTED)
+      adapter.mockRejectedValue(timeout)
+
+      const error: any = await service.post('/test', { a: 1 }).catch((e) => e)
+
+      expect(error).toBeInstanceOf(HttpException)
+      expect(error.getStatus()).toBe(500)
+      expect(error.cause).toBe(timeout)
+    })
+
+    it('passes a response body through as the options, with no cause', async () => {
+      const { service, adapter } = setup()
+      const body = { message: 'Resource not found' }
+      adapter.mockRejectedValue(new AxiosError('HTTP test error', '404', undefined, {}, createResponse(404, body)))
+
+      const error: any = await service.post('/test', { a: 1 }).catch((e) => e)
+
+      expect(error.getStatus()).toBe(404)
+      expect(error.options).toEqual(body)
+      expect(error.cause).toBeUndefined()
+    })
   })
 
   describe('Retry-After header', () => {

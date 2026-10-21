@@ -37,6 +37,11 @@ function getRetryAfterDelayMs (error: any): number | undefined {
   return undefined
 }
 
+// HttpException's options: the response body, or with no response (timeout, reset) the transport error as the cause.
+function errorOptions (error: any): any {
+  return error.response !== undefined && error.response !== null ? error.response.data : { cause: error }
+}
+
 function retryRequest<T> (config?: RetryConfig): MonoTypeOperatorFunction<T> {
   const { count = 1, delay = 100 } = config ?? {}
   return retry({
@@ -92,7 +97,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to GET ${url}`, status, error.response?.data)
+        throw new HttpException(`Failed to GET ${url}`, status, errorOptions(error))
       })
     )
 
@@ -131,7 +136,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to POST ${url}`, status, error.response?.data)
+        throw new HttpException(`Failed to POST ${url}`, status, errorOptions(error))
       })
     )
 
