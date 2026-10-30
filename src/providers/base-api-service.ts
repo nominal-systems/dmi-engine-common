@@ -37,6 +37,28 @@ function getRetryAfterDelayMs (error: any): number | undefined {
   return undefined
 }
 
+// The reason a request got no response, without the request: the axios error keeps its config (headers with access
+// tokens, a login's password) and the ClientRequest, which JSON.stringify or util.inspect of the exception would print.
+function transportCause (error: any): Error {
+  // A host with several addresses that all refuse (localhost: ::1 and 127.0.0.1) gives an empty message; the reasons
+  // are in the AggregateError's errors.
+  const inner: string[] = (Array.isArray(error?.cause?.errors) ? error.cause.errors : [])
+    .map((e: any) => e?.message)
+    .filter((m: unknown): m is string => typeof m === 'string' && m !== '')
+  const message = typeof error?.message === 'string' && error.message !== ''
+    ? error.message
+    : inner.length > 0 ? inner.join('; ') : String(error?.code ?? 'no response')
+  const cause: Error & { code?: string } = new Error(message)
+  cause.name = String(error?.name ?? 'Error')
+  if (error?.code !== undefined) cause.code = error.code
+  return cause
+}
+
+// HttpException's options: the response body, or with no response (timeout, reset) the reason as the cause.
+function errorOptions (error: any): any {
+  return error.response !== undefined && error.response !== null ? error.response.data : { cause: transportCause(error) }
+}
+
 function retryRequest<T> (config?: RetryConfig): MonoTypeOperatorFunction<T> {
   const { count = 1, delay = 100 } = config ?? {}
   return retry({
@@ -92,7 +114,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to GET ${url}`, status, error.response?.data)
+        throw new HttpException(`Failed to GET ${url}`, status, errorOptions(error))
       })
     )
 
@@ -131,7 +153,7 @@ export class BaseApiService {
       }),
       catchError((error) => {
         const status = error.response?.status ?? 500
-        throw new HttpException(`Failed to POST ${url}`, status, error.response?.data)
+        throw new HttpException(`Failed to POST ${url}`, status, errorOptions(error))
       })
     )
 
