@@ -16,6 +16,14 @@
   throws, say), the outcome is still passed on. An `extractAccessionIds()` that cannot read a body (an
   error body, typically) no longer costs the record: it is emitted with
   `accessionIds: []`.
+- `BaseApiService.get` and `.post` keep the reason a request got no response
+  (a timeout, a reset or refused connection, a DNS failure). The
+  `HttpException` is still a 500 with `Failed to GET|POST <url>`, and Nest now
+  sets its `cause` to an `Error` with the original `message`, `name` and `code`
+  (`ECONNABORTED`, `ECONNRESET`, …). The axios error itself is not kept: its
+  `config` holds the request headers, params and body. A response error is
+  unchanged, with the body in `options` and no `cause`
+  ([#34](https://github.com/nominal-systems/dmi-engine-common/issues/34)).
 
 ### Added
 

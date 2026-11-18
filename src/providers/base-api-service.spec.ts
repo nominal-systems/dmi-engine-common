@@ -1,6 +1,7 @@
 import axios, { AxiosAdapter, AxiosError, AxiosResponse } from 'axios'
 import { HttpService } from '@nestjs/axios'
 import { HttpException } from '@nestjs/common'
+import { inspect } from 'node:util'
 import { BaseApiService } from './base-api-service'
 
 function createResponse (status: number, data?: any, headers: Record<string, string> = {}): AxiosResponse {
@@ -175,6 +176,93 @@ describe('BaseApiService', () => {
         status: 500,
         message: 'Failed to GET /test'
       })
+    })
+
+    it('keeps a GET transport error as the cause', async () => {
+      const { service, adapter } = setup()
+      adapter.mockRejectedValue(new AxiosError('read ECONNRESET', 'ECONNRESET'))
+
+      const error: any = await service.get('/test', { retry: false }).catch((e) => e)
+
+      expect(error).toBeInstanceOf(HttpException)
+      expect(error.getStatus()).toBe(500)
+      expect(error.cause).toMatchObject({ code: 'ECONNRESET', message: 'read ECONNRESET' })
+    })
+
+    it('keeps a POST timeout as the cause', async () => {
+      const { service, adapter } = setup()
+      adapter.mockRejectedValue(new AxiosError('timeout of 30000ms exceeded', AxiosError.ECONNABORTED))
+
+      const error: any = await service.post('/test', { a: 1 }).catch((e) => e)
+
+      expect(error).toBeInstanceOf(HttpException)
+      expect(error.getStatus()).toBe(500)
+      expect(error.cause).toMatchObject({ code: 'ECONNABORTED', message: 'timeout of 30000ms exceeded' })
+    })
+
+    it('reads the reasons of a refused connection from the AggregateError when the message is empty', async () => {
+      const { service, adapter } = setup()
+      const refused = new AxiosError('', 'ECONNREFUSED')
+      refused.cause = Object.assign(new Error(''), {
+        errors: [new Error('connect ECONNREFUSED ::1:80'), new Error('connect ECONNREFUSED 127.0.0.1:80')]
+      })
+      adapter.mockRejectedValue(refused)
+
+      const error: any = await service.post('/test', {}).catch((e) => e)
+
+      expect(error.cause).toMatchObject({
+        code: 'ECONNREFUSED',
+        message: 'connect ECONNREFUSED ::1:80; connect ECONNREFUSED 127.0.0.1:80'
+      })
+    })
+
+    it('falls back to the code when the error has no message at all', async () => {
+      const { service, adapter } = setup()
+      adapter.mockRejectedValue(new AxiosError('', 'ECONNREFUSED'))
+
+      const error: any = await service.post('/test', {}).catch((e) => e)
+
+      expect(error.cause).toMatchObject({ code: 'ECONNREFUSED', message: 'ECONNREFUSED' })
+    })
+
+    it('keeps the request out of the cause', async () => {
+      const { service, adapter } = setup()
+      const raw = new AxiosError('read ECONNRESET', 'ECONNRESET')
+      adapter.mockImplementation(async (config) => {
+        const request = { _header: 'POST /test HTTP/1.1\r\naccessToken: secret-token\r\n' }
+        throw Object.assign(raw, { config, request })
+      })
+
+      const error: any = await service.post('/test', { password: 'secret-password' }, {
+        headers: { accessToken: 'secret-token' },
+        params: { accesstoken: 'secret-param' },
+        retry: false
+      }).catch((e) => e)
+
+      // The raw axios error does carry them, so the checks below are not vacuous.
+      expect(JSON.stringify(raw)).toContain('secret-token')
+      expect(inspect(raw, { depth: null })).toContain('secret-param')
+      for (const printed of [JSON.stringify(error), inspect(error, { depth: null })]) {
+        expect(printed).not.toContain('secret-token')
+        expect(printed).not.toContain('secret-password')
+        expect(printed).not.toContain('secret-param')
+      }
+    })
+
+    it.each([
+      ['GET', 503, 2, async (service: BaseApiService) => await service.get('/test', { retry: { delay: 0 } })],
+      ['POST', 404, 1, async (service: BaseApiService) => await service.post('/test', { a: 1 })]
+    ])('passes a %s response body through as the options, with no cause', async (_method, status, attempts, call) => {
+      const { service, adapter } = setup()
+      const body = { message: 'Resource not found' }
+      adapter.mockRejectedValue(new AxiosError('HTTP test error', String(status), undefined, {}, createResponse(status, body)))
+
+      const error: any = await call(service).catch((e) => e)
+
+      expect(error.getStatus()).toBe(status)
+      expect(error.options).toEqual(body)
+      expect(error.cause).toBeUndefined()
+      expect(adapter).toHaveBeenCalledTimes(attempts)
     })
   })
 
